@@ -27,4 +27,10 @@ public class ExceptionHandlerController {
     public void handleConflictException(final Exception e) {
         log.error(e.getMessage());
     }
+
+    @ExceptionHandler(ObjectNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleNotFoundException(final Exception e) {
+        log.error(e.getMessage());
+    }
 }

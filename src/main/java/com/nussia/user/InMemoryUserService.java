@@ -1,20 +1,20 @@
 package com.nussia.user;
 
 import com.nussia.exception.BadRequestException;
-import lombok.AllArgsConstructor;
+import com.nussia.exception.ObjectNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class InMemoryUserService implements UserService {
 
-    private final UserRepository USER_REPOSITORY;
+    private final UserRepository userRepository;
 
     @Override
-    public Optional<UserDTO> createUser(UserDTO userDTO) {
+    public UserDTO createUser(UserDTO userDTO) {
         if (userDTO == null) {
             throw new BadRequestException();
         } else if (userDTO.getId() != null) {
@@ -31,35 +31,35 @@ public class InMemoryUserService implements UserService {
             throw new BadRequestException("Cannot add user with invalid email address");
         }
 
-        return USER_REPOSITORY.addUser(userDTO);
+        return userRepository.addUser(userDTO).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
-    public Optional<UserDTO> editUser(UserDTO userDTO, Long userId) {
+    public UserDTO editUser(UserDTO userDTO, Long userId) {
         if (userId == null || userDTO == null) {
             throw new BadRequestException();
         }
-        return USER_REPOSITORY.editUser(userDTO, userId);
+        return userRepository.editUser(userDTO, userId).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
-    public Optional<UserDTO> getUser(Long userId) {
+    public UserDTO getUser(Long userId) {
         if (userId == null) {
             throw new BadRequestException();
         }
-        return USER_REPOSITORY.getUser(userId);
+        return userRepository.getUser(userId).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
-    public Optional<UserDTO> deleteUser(Long userId) {
+    public UserDTO deleteUser(Long userId) {
         if (userId == null) {
             throw new BadRequestException();
         }
-        return USER_REPOSITORY.deleteUser(userId);
+        return userRepository.deleteUser(userId).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
     public List<UserDTO> getUsers() {
-        return USER_REPOSITORY.getUsers();
+        return userRepository.getUsers();
     }
 }

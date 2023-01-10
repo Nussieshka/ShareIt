@@ -11,31 +11,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItemController {
 
-    private final ItemService ITEM_SERVICE;
+    private final ItemService itemService;
 
     @GetMapping("/{itemId}")
-    private ResponseEntity<ItemDTO> getItem(@PathVariable Long itemId) {
-        return ResponseEntity.of(ITEM_SERVICE.getItemById(itemId));
+    public ResponseEntity<ItemDTO> getItem(@PathVariable Long itemId) {
+        return ResponseEntity.ok(itemService.getItemById(itemId));
     }
 
     @PatchMapping("/{itemId}")
-    private ResponseEntity<ItemDTO> patchItem(@RequestBody ItemDTO itemDTO, @PathVariable Long itemId,
+    public ResponseEntity<ItemDTO> patchItem(@RequestBody ItemDTO itemDTO, @PathVariable Long itemId,
                                               @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ResponseEntity.of(ITEM_SERVICE.editItem(itemDTO, itemId, userId));
+        return ResponseEntity.ok(itemService.editItem(itemDTO, itemId, userId));
     }
 
     @PostMapping()
-    private ResponseEntity<ItemDTO> postItem(@RequestBody ItemDTO itemDTO, @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ResponseEntity.of(ITEM_SERVICE.addNewItem(itemDTO, userId));
+    public ResponseEntity<ItemDTO> postItem(@RequestBody ItemDTO itemDTO, @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return ResponseEntity.ok(itemService.addNewItem(itemDTO, userId));
     }
 
     @GetMapping()
-    private List<ItemDTO> getItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ITEM_SERVICE.getItems(userId);
+    public ResponseEntity<List<ItemDTO>> getItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
+        return ResponseEntity.ok(itemService.getItems(userId));
     }
 
     @GetMapping("/search")
-    private List<ItemDTO> getItemsBySearchQuery(@RequestParam String text) {
-        return ITEM_SERVICE.getItemsBySearchQuery(text);
+    public ResponseEntity<List<ItemDTO>> getItemsBySearchQuery(@RequestParam String text) {
+        return ResponseEntity.ok(itemService.getItemsBySearchQuery(text));
     }
 }

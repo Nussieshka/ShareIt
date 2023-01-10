@@ -1,29 +1,30 @@
 package com.nussia.item;
 
 import com.nussia.exception.BadRequestException;
+import com.nussia.exception.ObjectNotFoundException;
 import com.nussia.user.UserService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class InMemoryItemService implements ItemService {
 
-    private final ItemRepository ITEM_REPOSITORY;
+    private final ItemRepository itemRepository;
 
-    private final UserService USER_SERVICE;
+    private final UserService userService;
 
     @Override
-    public Optional<ItemDTO> addNewItem(ItemDTO itemDTO, Long ownerId) {
+    public ItemDTO addNewItem(ItemDTO itemDTO, Long ownerId) {
 
         if (ownerId == null || itemDTO == null) {
             throw new BadRequestException();
         } else if (itemDTO.getId() != null) {
             throw new BadRequestException("Cannot add item with itemId");
-        } else if (USER_SERVICE.getUser(ownerId).isEmpty()) {
-            return Optional.empty();
+        } else if (userService.getUser(ownerId) == null) {
+            throw new ObjectNotFoundException();
         }
 
         String name = itemDTO.getName();
@@ -36,7 +37,7 @@ public class InMemoryItemService implements ItemService {
             throw new BadRequestException("Cannot add item with blank description");
         }
 
-        return ITEM_REPOSITORY.addItem(itemDTO, ownerId);
+        return itemRepository.addItem(itemDTO, ownerId).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
@@ -44,23 +45,23 @@ public class InMemoryItemService implements ItemService {
         if (userId == null) {
             throw new BadRequestException();
         }
-        return ITEM_REPOSITORY.getItems(userId);
+        return itemRepository.getItems(userId);
     }
 
     @Override
-    public Optional<ItemDTO> getItemById(Long itemId) {
+    public ItemDTO getItemById(Long itemId) {
         if (itemId == null) {
             throw new BadRequestException();
         }
-        return ITEM_REPOSITORY.getItemById(itemId);
+        return itemRepository.getItemById(itemId).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
-    public Optional<ItemDTO> editItem(ItemDTO itemDTO, Long itemId, Long ownerId) {
+    public ItemDTO editItem(ItemDTO itemDTO, Long itemId, Long ownerId) {
         if (ownerId == null || itemId == null || itemDTO == null) {
             throw new BadRequestException();
         }
-        return ITEM_REPOSITORY.editItem(itemDTO, itemId, ownerId);
+        return itemRepository.editItem(itemDTO, itemId, ownerId).orElseThrow(ObjectNotFoundException::new);
     }
 
     @Override
@@ -71,6 +72,6 @@ public class InMemoryItemService implements ItemService {
             return Collections.emptyList();
         }
 
-        return ITEM_REPOSITORY.getItemsBySearchQuery(searchQuery.toLowerCase());
+        return itemRepository.getItemsBySearchQuery(searchQuery.toLowerCase());
     }
 }

@@ -15,16 +15,16 @@ public class InMemoryUserRepository implements UserRepository {
 
     private static final AtomicLong idCounter = new AtomicLong(1);
 
-    private static final Map<Long, User> USERS = new HashMap<>();
+    private static final Map<Long, User> users = new HashMap<>();
 
     @Override
     public List<UserDTO> getUsers() {
-        return USERS.values().stream().map(User::toUserDTO).collect(Collectors.toList());
+        return users.values().stream().map(User::toUserDTO).collect(Collectors.toList());
     }
 
     @Override
     public Optional<UserDTO> getUser(Long userId) {
-        return Optional.ofNullable(USERS.get(userId)).map(User::toUserDTO);
+        return Optional.ofNullable(users.get(userId)).map(User::toUserDTO);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class InMemoryUserRepository implements UserRepository {
             throw new ConflictException("User with this email is already exists");
         }
         User user = getUserFromUserDTO(userDTO);
-        return Optional.ofNullable(USERS.computeIfAbsent(user.getUserId(), x -> user).toUserDTO());
+        return Optional.ofNullable(users.computeIfAbsent(user.getUserId(), x -> user).toUserDTO());
     }
 
     @Override
@@ -41,7 +41,7 @@ public class InMemoryUserRepository implements UserRepository {
         if (isUserWithThisEmailExists(userDTO.getEmail())) {
             throw new ConflictException("User with this email is already exists");
         }
-        return Optional.ofNullable(USERS.computeIfPresent(userId, (id, currentUser) -> {
+        return Optional.ofNullable(users.computeIfPresent(userId, (id, currentUser) -> {
 
             String name = userDTO.getName();
             if (name != null) {
@@ -60,10 +60,10 @@ public class InMemoryUserRepository implements UserRepository {
 
     @Override
     public Optional<UserDTO> deleteUser(Long userId) {
-        if (!USERS.containsKey(userId)) {
+        if (!users.containsKey(userId)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(USERS.remove(userId)).map(User::toUserDTO);
+        return Optional.ofNullable(users.remove(userId)).map(User::toUserDTO);
     }
 
     private User getUserFromUserDTO(UserDTO userDTO) {
@@ -75,6 +75,6 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     private boolean isUserWithThisEmailExists(String email) {
-        return USERS.values().stream().anyMatch(x -> x.getEmail().equals(email));
+        return users.values().stream().anyMatch(x -> x.getEmail().equals(email));
     }
 }

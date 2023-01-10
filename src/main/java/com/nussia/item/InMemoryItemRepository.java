@@ -12,17 +12,17 @@ public class InMemoryItemRepository implements ItemRepository {
 
     private static final AtomicLong idCounter = new AtomicLong(1);
 
-    private static final Map<Long, Item> ITEMS = new HashMap<>();
+    private static final Map<Long, Item> items = new HashMap<>();
 
     @Override
     public Optional<ItemDTO> addItem(ItemDTO itemDTO, Long ownerId) {
         Item item = getItemFromItemDTO(itemDTO, ownerId);
-        return Optional.ofNullable(ITEMS.computeIfAbsent(item.getItemId(), x -> item).toItemDTO());
+        return Optional.ofNullable(items.computeIfAbsent(item.getItemId(), x -> item).toItemDTO());
     }
 
     @Override
     public Optional<ItemDTO> editItem(ItemDTO itemDTO, Long itemId, Long ownerId) {
-        return Optional.ofNullable(ITEMS.computeIfPresent(itemId, (id, currentItem) -> {
+        return Optional.ofNullable(items.computeIfPresent(itemId, (id, currentItem) -> {
             if (!currentItem.getOwnerId().equals(ownerId)) {
                 throw new ForbiddenException();
             }
@@ -49,18 +49,18 @@ public class InMemoryItemRepository implements ItemRepository {
 
     @Override
     public Optional<ItemDTO> getItemById(Long itemId) {
-        return Optional.ofNullable(ITEMS.get(itemId)).flatMap(x -> Optional.ofNullable(x.toItemDTO()));
+        return Optional.ofNullable(items.get(itemId)).flatMap(x -> Optional.ofNullable(x.toItemDTO()));
     }
 
     @Override
     public List<ItemDTO> getItems(Long ownerId) {
-        return ITEMS.values().stream().filter(x -> x.getOwnerId().equals(ownerId))
+        return items.values().stream().filter(x -> x.getOwnerId().equals(ownerId))
                 .map(Item::toItemDTO).collect(Collectors.toList());
     }
 
     @Override
     public List<ItemDTO> getItemsBySearchQuery(String searchQuery) {
-        return ITEMS.values().stream()
+        return items.values().stream()
                 .filter(x -> (x.getName().toLowerCase().contains(searchQuery)
                         || x.getDescription().toLowerCase().contains(searchQuery))
                 && x.getAvailable())

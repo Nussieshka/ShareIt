@@ -15,26 +15,26 @@ public class UserController {
 
     @PostMapping()
     public ResponseEntity<UserDTO> postUser(@RequestBody UserDTO userDTO) {
-        return ResponseEntity.of(USER_SERVICE.createUser(userDTO));
+        return ResponseEntity.ok(USER_SERVICE.createUser(userDTO));
     }
 
     @PatchMapping("/{userId}")
     public ResponseEntity<UserDTO> patchUser(@RequestBody UserDTO userDTO, @PathVariable Long userId) {
-        return ResponseEntity.of(USER_SERVICE.editUser(userDTO, userId));
+        return ResponseEntity.ok(USER_SERVICE.editUser(userDTO, userId));
     }
 
     @GetMapping("/{userId}")
     public ResponseEntity<UserDTO> getUser(@PathVariable Long userId) {
-        return ResponseEntity.of(USER_SERVICE.getUser(userId));
+        return ResponseEntity.ok(USER_SERVICE.getUser(userId));
     }
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<UserDTO> deleteUser(@PathVariable Long userId) {
-        return ResponseEntity.of(USER_SERVICE.deleteUser(userId));
+        return ResponseEntity.ok(USER_SERVICE.deleteUser(userId));
     }
 
     @GetMapping()
-    public List<UserDTO> getUsers() {
-        return USER_SERVICE.getUsers();
+    public ResponseEntity<List<UserDTO>> getUsers() {
+        return ResponseEntity.ok(USER_SERVICE.getUsers());
     }
 }
