@@ -2,7 +2,7 @@ package com.nussia.exception;
 
 public class ConflictException extends RuntimeException {
     public ConflictException() {
-        this("Conflict");
+        super();
     }
 
     public ConflictException(String message) {

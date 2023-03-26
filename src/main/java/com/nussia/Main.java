@@ -13,6 +13,7 @@ public class Main {
 
     public static void main(String[] args) throws LifecycleException {
         Tomcat tomcat = new Tomcat();
+        tomcat.setSilent(true);
         tomcat.getConnector().setPort(PORT);
 
         Context tomcatContext = tomcat.addContext("", null);

@@ -3,7 +3,7 @@ package com.nussia.exception;
 public class ForbiddenException extends RuntimeException {
 
     public ForbiddenException() {
-        this("Forbidden");
+        super();
     }
 
     public ForbiddenException(String message) {

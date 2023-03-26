@@ -1,6 +1,6 @@
 package com.nussia.user;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,10 +8,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
-@RequiredArgsConstructor
 public class UserController {
 
     private final UserService USER_SERVICE;
+
+    public UserController(@Qualifier("JpaUserService") UserService USER_SERVICE) {
+        this.USER_SERVICE = USER_SERVICE;
+    }
 
     @PostMapping()
     public ResponseEntity<UserDTO> postUser(@RequestBody UserDTO userDTO) {

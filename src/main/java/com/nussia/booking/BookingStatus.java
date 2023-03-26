@@ -2,7 +2,7 @@ package com.nussia.booking;
 
 public enum BookingStatus {
     APPROVED,
-    DECLINED,
+    REJECTED,
     WAITING,
     CANCELED
 }

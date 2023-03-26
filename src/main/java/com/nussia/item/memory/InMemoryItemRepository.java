@@ -1,30 +1,30 @@
-package com.nussia.item;
+package com.nussia.item.memory;
 
+import com.nussia.Util;
 import com.nussia.exception.ForbiddenException;
+import com.nussia.item.Item;
+import com.nussia.item.ItemDTO;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Repository
-public class InMemoryItemRepository implements ItemRepository {
-
-    private static final AtomicLong idCounter = new AtomicLong(1);
+public class InMemoryItemRepository {
 
     private static final Map<Long, Item> items = new HashMap<>();
 
-    @Override
     public Optional<ItemDTO> addItem(ItemDTO itemDTO, Long ownerId) {
-        Item item = getItemFromItemDTO(itemDTO, ownerId);
-        return Optional.ofNullable(items.computeIfAbsent(item.getItemId(), x -> item).toItemDTO());
+        Item item = Util.getItemFromItemDTO(itemDTO, ownerId);
+
+        return Optional.of(Util.toItemDTO(items.computeIfAbsent(item.getItemId(), x -> item), new ArrayList<>()));
     }
 
-    @Override
     public Optional<ItemDTO> editItem(ItemDTO itemDTO, Long itemId, Long ownerId) {
         return Optional.ofNullable(items.computeIfPresent(itemId, (id, currentItem) -> {
             if (!currentItem.getOwnerId().equals(ownerId)) {
-                throw new ForbiddenException();
+                throw new ForbiddenException("User with ID " + ownerId + " do not have permission to edit item with ID " +
+                        itemId);
             }
 
             String name = itemDTO.getName();
@@ -44,36 +44,25 @@ public class InMemoryItemRepository implements ItemRepository {
 
             return currentItem;
 
-        })).flatMap(x -> Optional.ofNullable(x.toItemDTO()));
+        })).flatMap(x -> Optional.of(Util.toItemDTO(x, new ArrayList<>())));
     }
 
-    @Override
     public Optional<ItemDTO> getItemById(Long itemId) {
-        return Optional.ofNullable(items.get(itemId)).flatMap(x -> Optional.ofNullable(x.toItemDTO()));
+        return Optional.ofNullable(items.get(itemId)).flatMap(x -> Optional.of(Util.toItemDTO(x, new ArrayList<>())));
     }
 
-    @Override
     public List<ItemDTO> getItems(Long ownerId) {
         return items.values().stream().filter(x -> x.getOwnerId().equals(ownerId))
-                .map(Item::toItemDTO).collect(Collectors.toList());
+                .map(x -> Util.toItemDTO(x, new ArrayList<>())).collect(Collectors.toList());
     }
 
-    @Override
     public List<ItemDTO> getItemsBySearchQuery(String searchQuery) {
         return items.values().stream()
                 .filter(x -> (x.getName().toLowerCase().contains(searchQuery)
                         || x.getDescription().toLowerCase().contains(searchQuery))
-                && x.getAvailable())
-                .map(Item::toItemDTO)
+                        && x.getAvailable())
+                .map(x -> Util.toItemDTO(x, new ArrayList<>()))
                 .collect(Collectors.toList());
     }
 
-    private Item getItemFromItemDTO(ItemDTO itemDTO, Long userId) {
-        return getItemFromItemDTO(idCounter.getAndIncrement(), itemDTO, userId);
-    }
-
-    private Item getItemFromItemDTO(Long id, ItemDTO itemDTO, Long userId) {
-        return new Item(id, userId, itemDTO.getName(), itemDTO.getDescription(),
-                itemDTO.getAvailable(), new HashMap<>());
-    }
 }

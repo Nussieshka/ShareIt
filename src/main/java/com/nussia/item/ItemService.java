@@ -10,7 +10,9 @@ public interface ItemService {
 
     ItemDTO addNewItem(ItemDTO itemDTO, Long ownerId);
 
-    ItemDTO getItemById(Long itemId);
+    ItemDTO getItemById(Long itemId, Long userId);
 
-    List<ItemDTO> getItemsBySearchQuery(String searchQuery);
+    List<ItemDTO> getItemsBySearchQuery(String searchQuery, Long userId);
+
+    CommentDTO addNewComment(CommentDTO commentDTO, Long itemId, Long userId);
 }
