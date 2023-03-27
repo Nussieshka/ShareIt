@@ -1,5 +1,8 @@
 package com.nussia.item;
 
+import com.nussia.item.comment.CommentDTO;
+import com.nussia.item.dto.ItemDTO;
+
 import java.util.List;
 
 public interface ItemService {

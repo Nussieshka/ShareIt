@@ -1,6 +1,7 @@
-package com.nussia.item;
+package com.nussia.item.dto;
 
-import com.nussia.booking.UserBooking;
+import com.nussia.booking.dto.UserBooking;
+import com.nussia.item.comment.CommentDTO;
 import lombok.*;
 
 import java.util.List;

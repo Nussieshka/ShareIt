@@ -1,4 +1,4 @@
-package com.nussia.booking;
+package com.nussia.booking.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

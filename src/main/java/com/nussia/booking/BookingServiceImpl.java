@@ -1,33 +1,40 @@
 package com.nussia.booking;
 
 import com.nussia.Util;
+import com.nussia.booking.dto.BookingDTO;
+import com.nussia.booking.dto.BookingMapper;
+import com.nussia.booking.dto.BookingShort;
+import com.nussia.booking.dto.UserBooking;
+import com.nussia.booking.model.Booking;
+import com.nussia.booking.model.BookingState;
+import com.nussia.booking.model.BookingStatus;
 import com.nussia.exception.BadRequestException;
 import com.nussia.exception.ObjectNotFoundException;
 import com.nussia.item.Item;
-import com.nussia.item.jpa.JpaItemRepository;
+import com.nussia.item.ItemRepository;
 import com.nussia.user.User;
-import com.nussia.user.jpa.JpaUserRepository;
+import com.nussia.user.dto.UserMapper;
+import com.nussia.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class JpaBookingService implements BookingService {
+public class BookingServiceImpl implements BookingService {
 
-    private final JpaBookingRepository repository;
+    private final BookingRepository repository;
 
-    private final JpaItemRepository itemRepository;
+    private final ItemRepository itemRepository;
 
-    private final JpaUserRepository userRepository;
+    private final UserRepository userRepository;
     @Transactional
     @Override
     public BookingDTO addBooking(BookingShort bookingShort, Long userId) {
@@ -43,7 +50,7 @@ public class JpaBookingService implements BookingService {
         bookingDTO.setEnd(bookingShort.getEnd());
         bookingDTO.setStatus(BookingStatus.WAITING);
         bookingDTO.setItem(item.toSimpleItemDTO());
-        bookingDTO.setBooker(user.toUserDTO());
+        bookingDTO.setBooker(UserMapper.INSTANCE.toUserDTO(user));
 
         Util.validateBookingDTO(bookingDTO);
 
@@ -51,13 +58,13 @@ public class JpaBookingService implements BookingService {
             throw new BadRequestException("Item with ID " + itemId + "is unavailable");
         }
 
-        Booking testBooking = Util.getBookingFromBookingDTO(bookingDTO, itemId, item.getOwnerId(), userId);
+        Booking testBooking = BookingMapper.INSTANCE.toBookingEntity(bookingDTO, itemId, item.getOwnerId());
 
         if (Objects.equals(testBooking.getItem().getOwnerId(), userId)) {
             throw new ObjectNotFoundException("Cannot add booking for your own item");
         }
 
-        return repository.save(testBooking).toBookingDTO();
+        return BookingMapper.INSTANCE.toBookingDTO(repository.save(testBooking));
     }
 
     @Transactional
@@ -67,13 +74,8 @@ public class JpaBookingService implements BookingService {
             throw new BadRequestException("Booking ID, user ID, or approval status is null");
         }
 
-        Booking booking;
-
-        try {
-            booking = repository.getById(bookingId);
-        } catch (EntityNotFoundException e) {
-            throw new ObjectNotFoundException("Booking", bookingId);
-        }
+        Booking booking = repository.findById(bookingId)
+                .orElseThrow(() -> new ObjectNotFoundException("Booking", bookingId));
 
         if (!Objects.equals(booking.getItem().getOwnerId(), userId)) {
             throw new ObjectNotFoundException("User with ID " + userId + " is not authorized to approve this booking");
@@ -83,7 +85,7 @@ public class JpaBookingService implements BookingService {
 
         booking.setBookingStatus(isApproved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
 
-        return repository.save(booking).toBookingDTO();
+        return BookingMapper.INSTANCE.toBookingDTO(repository.save(booking));
     }
 
     @Transactional
@@ -93,17 +95,14 @@ public class JpaBookingService implements BookingService {
             throw new BadRequestException("Booking ID or user ID is null");
         }
 
-        try {
-            Booking booking = repository.getById(bookingId);
-            if (!Objects.equals(booking.getBorrowingUser().getId(), userId) &&
-                    !Objects.equals(booking.getItem().getOwnerId(), userId)) {
-                throw new ObjectNotFoundException("Booking with ID " + bookingId + " not found for user with ID "
-                        + userId);
-            }
-            return booking.toBookingDTO();
-        } catch (EntityNotFoundException e) {
-            throw new ObjectNotFoundException("Booking", bookingId);
+        Booking booking = repository.findById(bookingId)
+                .orElseThrow(() -> new ObjectNotFoundException("Booking", bookingId));
+
+        if (!booking.getBorrowingUser().getId().equals(userId) && !booking.getItem().getOwnerId().equals(userId)) {
+            throw new ObjectNotFoundException("Booking with ID " + bookingId + " not found for user with ID " + userId);
         }
+
+        return BookingMapper.INSTANCE.toBookingDTO(booking);
     }
 
     @Transactional
@@ -118,7 +117,7 @@ public class JpaBookingService implements BookingService {
         try {
             BookingState bookingState = BookingState.valueOf(state.toUpperCase());
             List<Booking> out;
-            Timestamp now = new Timestamp(System.currentTimeMillis());
+            LocalDateTime now = LocalDateTime.now();
 
             switch (bookingState) {
                 case ALL:
@@ -154,7 +153,7 @@ public class JpaBookingService implements BookingService {
                     throw new BadRequestException("Unknown state: " + state);
             }
 
-            return Util.getBookingDTOFromBooking(out);
+            return BookingMapper.INSTANCE.toBookingDTO(out);
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown state: " + state);
         }
@@ -172,7 +171,7 @@ public class JpaBookingService implements BookingService {
         try {
             BookingState bookingState = BookingState.valueOf(state.toUpperCase());
             List<Booking> out;
-            Timestamp now = new Timestamp(System.currentTimeMillis());
+            LocalDateTime now = LocalDateTime.now();
 
             switch (bookingState) {
                 case ALL:
@@ -208,7 +207,7 @@ public class JpaBookingService implements BookingService {
                     throw new BadRequestException("Unknown state: " + state);
             }
 
-            return Util.getBookingDTOFromBooking(out);
+            return BookingMapper.INSTANCE.toBookingDTO(out);
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown state: " + state);
         }
@@ -221,19 +220,10 @@ public class JpaBookingService implements BookingService {
             throw new ObjectNotFoundException("Item", itemId);
         }
 
-        Timestamp now = new Timestamp(System.currentTimeMillis());
+        LocalDateTime now = LocalDateTime.now();
 
-        try {
-            Booking booking = repository.findFirstByItem_ItemIdAndStartDateBeforeAndBookingStatusEqualsOrderByEndDateDesc(itemId, now, BookingStatus.APPROVED);
-
-            if (booking == null) {
-                return null;
-            } else {
-                return booking.toUserBooking();
-            }
-        } catch (EntityNotFoundException e) {
-            return null;
-        }
+        return repository.findFirstByItem_ItemIdAndStartDateBeforeAndBookingStatusEqualsOrderByEndDateDesc(itemId, now,
+                BookingStatus.APPROVED).map(BookingMapper.INSTANCE::toUserBooking).orElse(null);
     }
 
     @Transactional
@@ -243,24 +233,16 @@ public class JpaBookingService implements BookingService {
             throw new ObjectNotFoundException("Item", itemId);
         }
 
-        Timestamp now = new Timestamp(System.currentTimeMillis());
+        LocalDateTime now = LocalDateTime.now();
 
-        try {
-            Booking booking = repository.findFirstByItem_ItemIdAndStartDateAfterAndBookingStatusEqualsOrderByStartDateAsc(itemId, now, BookingStatus.APPROVED);
-            if (booking == null) {
-                return null;
-            } else {
-                return booking.toUserBooking();
-            }
-        } catch (EntityNotFoundException e) {
-            return null;
-        }
+        return repository.findFirstByItem_ItemIdAndStartDateAfterAndBookingStatusEqualsOrderByStartDateAsc(itemId, now,
+                BookingStatus.APPROVED).map(BookingMapper.INSTANCE::toUserBooking).orElse(null);
     }
 
     @Override
     public boolean isBorrowedByUser(Long userId, Long itemId) {
         return repository.existsByBorrowingUser_IdAndItem_ItemIdAndBookingStatusEqualsAndEndDateBefore(userId, itemId,
-                BookingStatus.APPROVED, new Timestamp(System.currentTimeMillis()));
+                BookingStatus.APPROVED, LocalDateTime.now());
     }
 
     private Item getItemById(Long itemId) {

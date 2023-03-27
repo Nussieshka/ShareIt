@@ -1,28 +1,26 @@
-package com.nussia.user.jpa;
+package com.nussia.user;
 
 import com.nussia.Util;
 import com.nussia.exception.BadRequestException;
 import com.nussia.exception.ConflictException;
 import com.nussia.exception.ObjectNotFoundException;
-import com.nussia.user.User;
-import com.nussia.user.UserDTO;
-import com.nussia.user.UserService;
+import com.nussia.user.dto.UserDTO;
+import com.nussia.user.dto.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 import java.util.List;
 
 @Service("JpaUserService")
 @RequiredArgsConstructor
 @Slf4j
-public class JpaUserService implements UserService {
+public class UserServiceImpl implements UserService {
 
-    private final JpaUserRepository repository;
+    private final UserRepository repository;
 
     @Transactional
     @Override
@@ -36,7 +34,7 @@ public class JpaUserService implements UserService {
         Util.validateUserDTO(userDTO);
 
         try {
-            return repository.save(Util.getUserFromUserDTO(userDTO)).toUserDTO();
+            return UserMapper.INSTANCE.toUserDTO(repository.save(UserMapper.INSTANCE.toUserEntity(userDTO)));
         } catch (DataIntegrityViolationException e) {
             log.info(e.getMessage());
             throw new ConflictException("User with same email address exists");
@@ -51,7 +49,7 @@ public class JpaUserService implements UserService {
         }
 
         String email = userDTO.getEmail();
-        User user = this.repository.getById(userId);
+        User user = this.repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
 
         String name = userDTO.getName();
         if (name != null) {
@@ -62,7 +60,7 @@ public class JpaUserService implements UserService {
             user.setEmail(email);
         }
 
-        return repository.save(user).toUserDTO();
+        return UserMapper.INSTANCE.toUserDTO(repository.save(user));
     }
 
     @Transactional
@@ -71,11 +69,9 @@ public class JpaUserService implements UserService {
         if (userId == null) {
             throw new BadRequestException("Invalid parameter: userId is null");
         }
-        try {
-            return repository.getById(userId).toUserDTO();
-        } catch (EntityNotFoundException e) {
-            throw new ObjectNotFoundException("User", userId);
-        }
+
+        return repository.findById(userId).map(UserMapper.INSTANCE::toUserDTO)
+                .orElseThrow(() -> new ObjectNotFoundException("User", userId));
     }
 
     @Transactional
@@ -84,18 +80,18 @@ public class JpaUserService implements UserService {
         if (userId == null) {
             throw new BadRequestException("Invalid parameter: userId is null");
         }
-        User user = repository.getById(userId);
+        User user = repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
         try {
             repository.deleteById(userId);
         } catch (EmptyResultDataAccessException e) {
             throw new ObjectNotFoundException("User", userId);
         }
-        return user.toUserDTO();
+        return UserMapper.INSTANCE.toUserDTO(user);
     }
 
     @Override
     public List<UserDTO> getUsers() {
-        return Util.getUserDTOFromUser(repository.findAll());
+        return UserMapper.INSTANCE.toUserDTO(repository.findAll());
     }
 
     @Override

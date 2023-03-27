@@ -1,5 +1,7 @@
 package com.nussia.item;
 
+import com.nussia.item.comment.Comment;
+import com.nussia.item.dto.SimpleItemDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,11 +1,12 @@
-package com.nussia.item.jpa;
+package com.nussia.item;
 
-import com.nussia.item.Item;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-public interface JpaItemRepository extends JpaRepository<Item, Long> {
+@Repository
+public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findAllByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailable(String name,
                                                                                               String description,
                                                                                               Boolean available);

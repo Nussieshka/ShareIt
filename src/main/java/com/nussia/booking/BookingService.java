@@ -1,5 +1,9 @@
 package com.nussia.booking;
 
+import com.nussia.booking.dto.BookingDTO;
+import com.nussia.booking.dto.BookingShort;
+import com.nussia.booking.dto.UserBooking;
+
 import java.util.List;
 
 public interface BookingService {

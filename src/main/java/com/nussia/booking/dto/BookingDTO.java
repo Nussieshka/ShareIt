@@ -1,7 +1,8 @@
-package com.nussia.booking;
+package com.nussia.booking.dto;
 
-import com.nussia.item.SimpleItemDTO;
-import com.nussia.user.UserDTO;
+import com.nussia.booking.model.BookingStatus;
+import com.nussia.item.dto.SimpleItemDTO;
+import com.nussia.user.dto.UserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

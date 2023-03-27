@@ -1,13 +1,14 @@
-package com.nussia.booking;
+package com.nussia.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class UserBooking {
+@NoArgsConstructor
+@Data
+public class UserDTO {
     private Long id;
-    private Long bookerId;
+    private String name;
+    private String email;
 }

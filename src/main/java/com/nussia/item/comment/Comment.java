@@ -1,11 +1,11 @@
-package com.nussia.item;
+package com.nussia.item.comment;
 
-import com.nussia.Util;
+import com.nussia.item.Item;
 import com.nussia.user.User;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "comments")
@@ -27,9 +27,6 @@ public class Comment {
     private Item item;
 
     @Column(name = "created_at")
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
-    public CommentDTO toCommentDTO() {
-        return new CommentDTO(id, text, user.getName(), Util.timestampToString(createdAt));
-    }
 }

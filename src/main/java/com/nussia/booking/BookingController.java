@@ -1,5 +1,7 @@
 package com.nussia.booking;
 
+import com.nussia.booking.dto.BookingDTO;
+import com.nussia.booking.dto.BookingShort;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

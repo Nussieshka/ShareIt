@@ -23,7 +23,4 @@ public class User {
     @Column(name = "email")
     private String email;
 
-    public UserDTO toUserDTO() {
-        return new UserDTO(id, name, email);
-    }
 }

@@ -1,5 +1,7 @@
 package com.nussia.user;
 
+import com.nussia.user.dto.UserDTO;
+
 import java.util.List;
 
 public interface UserService {
