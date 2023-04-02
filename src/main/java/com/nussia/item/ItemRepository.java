@@ -1,16 +1,15 @@
 package com.nussia.item;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
-import java.util.Optional;
 
-public interface ItemRepository {
-    Optional<ItemDTO> addItem(ItemDTO itemDTO, Long ownerId);
+@Repository
+public interface ItemRepository extends JpaRepository<Item, Long> {
+    List<Item> findAllByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailable(String name,
+                                                                                              String description,
+                                                                                              Boolean available);
+    List<Item> findAllByOwnerIdOrderByItemIdAsc(Long ownerId);
 
-    Optional<ItemDTO> editItem(ItemDTO itemDTO, Long itemId, Long ownerId);
-
-    Optional<ItemDTO> getItemById(Long itemId);
-
-    List<ItemDTO> getItems(Long ownerId);
-
-    List<ItemDTO> getItemsBySearchQuery(String searchQuery);
 }

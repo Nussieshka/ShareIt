@@ -1,4 +1,4 @@
-package com.nussia.user;
+package com.nussia.item.comment;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class UserDTO {
+public class CommentDTO {
     private Long id;
-    private String name;
-    private String email;
+    private String text;
+    private String authorName;
+    private String created;
 }

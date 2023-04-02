@@ -1,12 +1,10 @@
 package com.nussia.user;
 
-import java.util.List;
-import java.util.Optional;
+import lombok.NonNull;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface UserRepository {
-    List<UserDTO> getUsers();
-    Optional<UserDTO> getUser(Long userId);
-    Optional<UserDTO> addUser(UserDTO userDTO);
-    Optional<UserDTO> editUser(UserDTO userDTO, Long userId);
-    Optional<UserDTO> deleteUser(Long userId);
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    boolean existsById(@NonNull Long id);
 }
