@@ -1,4 +1,4 @@
-package com.nussia.item.comment;
+package com.nussia.item.comment.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -15,7 +15,7 @@ public class BookingController {
 
     private final BookingService bookingService;
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<BookingDTO> postBooking(@RequestBody BookingShort bookingShort,
                                                   @RequestHeader("X-Sharer-User-Id") Long userId) {
         return ResponseEntity.ok(bookingService.addBooking(bookingShort, userId));
@@ -34,16 +34,20 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getBooking(bookingId, userId));
     }
 
-    @GetMapping()
-    public ResponseEntity<List<BookingDTO>> getBookings(@RequestParam(defaultValue = "ALL") String state,
+    @GetMapping
+    public ResponseEntity<List<BookingDTO>> getBookings(@RequestParam(required = false) Integer from,
+                                                        @RequestParam(required = false) Integer size,
+                                                        @RequestParam(defaultValue = "ALL") String state,
                                                         @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ResponseEntity.ok(bookingService.getBookingsByState(userId, state));
+        return ResponseEntity.ok(bookingService.getBookingsByState(from, size, userId, state));
     }
 
     @GetMapping("/owner")
-    public ResponseEntity<List<BookingDTO>> getBookingsFromUser(@RequestParam(defaultValue = "ALL") String state,
+    public ResponseEntity<List<BookingDTO>> getBookingsFromUser(@RequestParam(required = false) Integer from,
+                                                                @RequestParam(required = false) Integer size,
+                                                                @RequestParam(defaultValue = "ALL") String state,
                                                                 @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ResponseEntity.ok(bookingService.getBookingsByStateFromOwner(userId, state));
+        return ResponseEntity.ok(bookingService.getBookingsByStateFromOwner(from, size, userId, state));
     }
 
 }

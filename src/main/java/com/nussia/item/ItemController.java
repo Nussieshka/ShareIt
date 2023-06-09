@@ -1,6 +1,6 @@
 package com.nussia.item;
 
-import com.nussia.item.comment.CommentDTO;
+import com.nussia.item.comment.dto.CommentDTO;
 import com.nussia.item.dto.ItemDTO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -29,19 +29,25 @@ public class ItemController {
         return ResponseEntity.ok(itemService.editItem(itemDTO, itemId, userId));
     }
 
-    @PostMapping()
-    public ResponseEntity<ItemDTO> postItem(@RequestBody ItemDTO itemDTO, @RequestHeader("X-Sharer-User-Id") Long userId) {
+    @PostMapping
+    public ResponseEntity<ItemDTO> postItem(@RequestBody ItemDTO itemDTO,
+                                            @RequestHeader("X-Sharer-User-Id") Long userId) {
         return ResponseEntity.ok(itemService.addNewItem(itemDTO, userId));
     }
 
-    @GetMapping()
-    public ResponseEntity<List<ItemDTO>> getItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ResponseEntity.ok(itemService.getItems(userId));
+    @GetMapping
+    public ResponseEntity<List<ItemDTO>> getItems(@RequestParam(required = false) Integer from,
+                                                  @RequestParam(required = false) Integer size,
+                                                  @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return ResponseEntity.ok(itemService.getItems(from, size, userId));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<ItemDTO>> getItemsBySearchQuery(@RequestParam String text, @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return ResponseEntity.ok(itemService.getItemsBySearchQuery(text, userId));
+    public ResponseEntity<List<ItemDTO>> getItemsBySearchQuery(@RequestParam(required = false) Integer from,
+                                                               @RequestParam(required = false) Integer size,
+                                                               @RequestParam String text,
+                                                               @RequestHeader("X-Sharer-User-Id") Long userId) {
+        return ResponseEntity.ok(itemService.getItemsBySearchQuery(from, size, text, userId));
     }
 
     @PostMapping("/{itemId}/comment")

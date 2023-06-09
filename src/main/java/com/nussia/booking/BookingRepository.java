@@ -2,6 +2,8 @@ package com.nussia.booking;
 
 import com.nussia.booking.model.Booking;
 import com.nussia.booking.model.BookingStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -29,6 +31,27 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                                                                              LocalDateTime startDate,
                                                                                              LocalDateTime endDate);
 
+    Page<Booking> findAllByBorrowingUser_IdOrderByStartDateDesc(Long borrowingUserId, Pageable pageable);
+
+    Page<Booking> findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(Long borrowingUserId,
+                                                                             BookingStatus bookingStatus,
+                                                                             Pageable pageable);
+
+    Page<Booking> findByBorrowingUser_IdAndStartDateBeforeAndEndDateAfterOrderByStartDateAsc(Long borrowingUserId,
+                                                                                             LocalDateTime startDate,
+                                                                                             LocalDateTime endDate,
+                                                                                             Pageable pageable);
+
+    Page<Booking> findByBorrowingUser_IdAndStartDateBeforeAndEndDateBeforeOrderByStartDateDesc(Long borrowingUserId,
+                                                                                               LocalDateTime startDate,
+                                                                                               LocalDateTime endDate,
+                                                                                               Pageable pageable);
+
+    Page<Booking> findByBorrowingUser_IdAndStartDateAfterAndEndDateAfterOrderByStartDateDesc(Long borrowingUserId,
+                                                                                             LocalDateTime startDate,
+                                                                                             LocalDateTime endDate,
+                                                                                             Pageable pageable);
+
     List<Booking> findAllByItem_OwnerIdOrderByStartDateDesc(Long itemOwnerId);
 
     List<Booking> findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus bookingStatus, Long itemOwnerId);
@@ -42,6 +65,25 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByStartDateAfterAndEndDateAfterAndItem_OwnerIdOrderByStartDateDesc(LocalDateTime startDate,
                                                                                          LocalDateTime endDate,
                                                                                          Long itemOwnerId);
+
+    Page<Booking> findAllByItem_OwnerIdOrderByStartDateDesc(Long itemOwnerId,
+                                                            Pageable pageable);
+
+    Page<Booking> findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus bookingStatus, Long itemOwnerId,
+                                                                         Pageable pageable);
+
+    Page<Booking> findByStartDateBeforeAndEndDateAfterAndItem_OwnerIdOrderByStartDateAsc(LocalDateTime startDate,
+                                                                                         LocalDateTime endDate,
+                                                                                         Long itemOwnerId,
+                                                                                         Pageable pageable);
+    Page<Booking> findByStartDateBeforeAndEndDateBeforeAndItem_OwnerIdOrderByStartDateDesc(LocalDateTime startDate,
+                                                                                           LocalDateTime endDate,
+                                                                                           Long itemOwnerId,
+                                                                                           Pageable pageable);
+    Page<Booking> findByStartDateAfterAndEndDateAfterAndItem_OwnerIdOrderByStartDateDesc(LocalDateTime startDate,
+                                                                                         LocalDateTime endDate,
+                                                                                         Long itemOwnerId,
+                                                                                         Pageable pageable);
 
     Optional<Booking> findFirstByItem_ItemIdAndStartDateBeforeAndBookingStatusEqualsOrderByEndDateDesc(Long itemId,
                                                                                                        LocalDateTime endDate,

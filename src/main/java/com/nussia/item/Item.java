@@ -1,7 +1,7 @@
 package com.nussia.item;
 
 import com.nussia.item.comment.Comment;
-import com.nussia.item.dto.SimpleItemDTO;
+import com.nussia.request.Request;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,10 +33,10 @@ public class Item {
     private Boolean available;
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL)
-    List<Comment> comments;
+    private List<Comment> comments;
 
-    public SimpleItemDTO toSimpleItemDTO() {
-        return new SimpleItemDTO(itemId, name, description, available);
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id")
+    private Request request;
 
 }
