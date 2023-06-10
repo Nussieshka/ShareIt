@@ -14,5 +14,5 @@ public class RequestDTO {
     private Long id;
     private String description;
     private String created;
-    List<SimpleItemDTO> items;
+    private List<SimpleItemDTO> items;
 }
