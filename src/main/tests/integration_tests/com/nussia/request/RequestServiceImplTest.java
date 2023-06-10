@@ -2,7 +2,6 @@ package integration_tests.com.nussia.request;
 
 import com.nussia.Util;
 import com.nussia.booking.BookingServiceImpl;
-import com.nussia.config.PersistenceConfig;
 import com.nussia.item.ItemServiceImpl;
 import com.nussia.request.Request;
 import com.nussia.request.RequestService;
@@ -18,6 +17,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 import util.IntegrationTestUtil;
+import util.TestPersistenceConfig;
 import util.TestUtil;
 
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 @Transactional
 @TestPropertySource(properties = { "db.name = test_share_it" })
-@SpringJUnitConfig( { PersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
+@SpringJUnitConfig( { TestPersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
         BookingServiceImpl.class, RequestServiceImpl.class, IntegrationTestUtil.class })
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class RequestServiceImplTest {

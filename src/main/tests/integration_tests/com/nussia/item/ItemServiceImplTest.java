@@ -2,7 +2,6 @@ package integration_tests.com.nussia.item;
 
 import com.nussia.booking.BookingServiceImpl;
 import com.nussia.booking.model.BookingStatus;
-import com.nussia.config.PersistenceConfig;
 import com.nussia.item.Item;
 import com.nussia.item.ItemService;
 import com.nussia.item.ItemServiceImpl;
@@ -20,6 +19,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 import util.IntegrationTestUtil;
+import util.TestPersistenceConfig;
 import util.TestUtil;
 
 import java.util.List;
@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 @Transactional
 @TestPropertySource(properties = { "db.name = test_share_it" })
-@SpringJUnitConfig( { PersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
+@SpringJUnitConfig( { TestPersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
         BookingServiceImpl.class, RequestServiceImpl.class, IntegrationTestUtil.class })
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class ItemServiceImplTest {
@@ -49,7 +49,7 @@ class ItemServiceImplTest {
         assertThat(item.getName(), equalTo(itemDTO.getName()));
         assertThat(item.getDescription(), equalTo(itemDTO.getDescription()));
         assertThat(item.getAvailable(), equalTo(itemDTO.getAvailable()));
-        assertThat(item.getOwnerId(), equalTo(ownerId));
+        assertThat(item.getOwner().getId(), equalTo(ownerId));
     }
 
     @Test
@@ -70,7 +70,7 @@ class ItemServiceImplTest {
         assertThat(editedItem.getName(), equalTo(itemDTO.getName()));
         assertThat(editedItem.getDescription(), equalTo(itemDTO.getDescription()));
         assertThat(editedItem.getAvailable(), equalTo(itemDTO.getAvailable()));
-        assertThat(editedItem.getOwnerId(), equalTo(ownerId));
+        assertThat(editedItem.getOwner().getId(), equalTo(ownerId));
     }
 
     @Test
@@ -94,7 +94,7 @@ class ItemServiceImplTest {
         assertThat(item.getName(), equalTo(repositoryItem.getName()));
         assertThat(item.getDescription(), equalTo(repositoryItem.getDescription()));
         assertThat(item.getAvailable(), equalTo(repositoryItem.getAvailable()));
-        assertThat(item.getOwnerId(), equalTo(ownerId));
+        assertThat(item.getOwner().getId(), equalTo(ownerId));
     }
 
     @Test
@@ -132,7 +132,7 @@ class ItemServiceImplTest {
         CommentDTO comment = TestUtil.getTestCommentDTO();
         itemService.addNewComment(comment, itemId, borrowerId);
 
-        List<CommentDTO> comments = itemService.getItemById(itemId, item.getOwnerId()).getComments();
+        List<CommentDTO> comments = itemService.getItemById(itemId, item.getOwner().getId()).getComments();
 
         assertThat(comments.size(), equalTo(1));
         assertThat(comments.get(0).getText(), equalTo(comment.getText()));

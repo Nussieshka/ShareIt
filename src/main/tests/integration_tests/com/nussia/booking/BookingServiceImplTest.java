@@ -8,7 +8,6 @@ import com.nussia.booking.dto.BookingShort;
 import com.nussia.booking.model.Booking;
 import com.nussia.booking.model.BookingState;
 import com.nussia.booking.model.BookingStatus;
-import com.nussia.config.PersistenceConfig;
 import com.nussia.item.Item;
 import com.nussia.item.ItemServiceImpl;
 import com.nussia.item.dto.ItemMapper;
@@ -22,6 +21,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 import util.IntegrationTestUtil;
+import util.TestPersistenceConfig;
 import util.TestUtil;
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 @Transactional
 @TestPropertySource(properties = { "db.name = test_share_it" })
-@SpringJUnitConfig( { PersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
+@SpringJUnitConfig( { TestPersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
         BookingServiceImpl.class, RequestServiceImpl.class, IntegrationTestUtil.class })
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class BookingServiceImplTest {
@@ -63,7 +63,7 @@ class BookingServiceImplTest {
         Long bookingId = booking.getBookingId();
 
         BookingDTO approvedBooking =
-                bookingService.approveBooking(bookingId, booking.getItem().getOwnerId(), true);
+                bookingService.approveBooking(bookingId, booking.getItem().getOwner().getId(), true);
 
         assertThat(approvedBooking.getId(), equalTo(approvedBooking.getId()));
         assertThat(booking.getBookingStatus(), equalTo(BookingStatus.APPROVED));
@@ -93,7 +93,7 @@ class BookingServiceImplTest {
 
         Booking approvedBooking = bookingList.get(2);
         bookingService.approveBooking(approvedBooking.getBookingId(),
-                approvedBooking.getItem().getOwnerId(), true);
+                approvedBooking.getItem().getOwner().getId(), true);
 
         List<BookingDTO> allBookings = bookingService.getBookingsByState(null, null, bookerId,
                 BookingState.WAITING.name());

@@ -1,10 +1,10 @@
 package jpa_tests.com.nussia.item;
 
-import com.nussia.config.PersistenceConfig;
 import com.nussia.item.Item;
 import com.nussia.item.ItemRepository;
 import com.nussia.item.dto.ItemMapper;
 import com.nussia.item.dto.SimpleItemDTO;
+import com.nussia.user.User;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
+import util.TestPersistenceConfig;
 import util.TestUtil;
 
 import java.util.List;
@@ -23,7 +24,7 @@ import static org.hamcrest.Matchers.equalTo;
 @DataJpaTest
 @Transactional
 @TestPropertySource(properties = { "db.name = test_share_it" })
-@SpringJUnitConfig( { PersistenceConfig.class })
+@SpringJUnitConfig( { TestPersistenceConfig.class })
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class ItemRepositoryTest {
 
@@ -32,7 +33,8 @@ public class ItemRepositoryTest {
 
     @Test
     void shouldFindAllByName() {
-        Long ownerId = entityManager.persistAndGetId(TestUtil.getTestUser(null), Long.class);
+        User user = TestUtil.getTestUser(null);
+        user.setId(entityManager.persistAndGetId(user, Long.class));
         SimpleItemDTO itemDTO1 = TestUtil.getTestItemDTO();
         SimpleItemDTO itemDTO2 = TestUtil.getTestItemDTO();
         itemDTO2.setName("Wireless Headphones");
@@ -40,9 +42,9 @@ public class ItemRepositoryTest {
         itemDTO3.setName("Old Radio");
         itemDTO3.setDescription("This radio doesn't support wireless headphones");
 
-        entityManager.persist(ItemMapper.INSTANCE.toItemEntity(itemDTO1, ownerId));
-        entityManager.persist(ItemMapper.INSTANCE.toItemEntity(itemDTO2, ownerId));
-        entityManager.persist(ItemMapper.INSTANCE.toItemEntity(itemDTO3, ownerId));
+        entityManager.persist(ItemMapper.INSTANCE.toItemEntity(itemDTO1, user));
+        entityManager.persist(ItemMapper.INSTANCE.toItemEntity(itemDTO2, user));
+        entityManager.persist(ItemMapper.INSTANCE.toItemEntity(itemDTO3, user));
 
         List<Item> firstQuery = repository.
                 findAllByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailable(

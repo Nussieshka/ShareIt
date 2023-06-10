@@ -1,7 +1,6 @@
 package integration_tests.com.nussia.user;
 
 import com.nussia.booking.BookingServiceImpl;
-import com.nussia.config.PersistenceConfig;
 import com.nussia.exception.ObjectNotFoundException;
 import com.nussia.item.ItemServiceImpl;
 import com.nussia.request.RequestServiceImpl;
@@ -16,6 +15,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 import util.IntegrationTestUtil;
+import util.TestPersistenceConfig;
 import util.TestUtil;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
 @TestPropertySource(properties = { "db.name = test_share_it" })
-@SpringJUnitConfig( { PersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
+@SpringJUnitConfig( { TestPersistenceConfig.class, UserServiceImpl.class, ItemServiceImpl.class,
         BookingServiceImpl.class, RequestServiceImpl.class, IntegrationTestUtil.class })
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class UserServiceImplTest {

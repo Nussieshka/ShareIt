@@ -96,16 +96,24 @@ public class TestUtil {
         return user;
     }
 
-    public static Item getItemWithId(SimpleItemDTO itemDTO, Long userId) {
-        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, userId);
+    public static Item getItemWithId(SimpleItemDTO itemDTO, User user) {
+        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, user);
         item.setItemId(itemDTO.getId());
         return item;
     }
 
-    public static Item getItemWithId(SimpleItemDTO itemDTO, Request request, Long userId) {
-        Item item = getItemWithId(itemDTO, userId);
+    public static Item getItemWithId(SimpleItemDTO itemDTO, Long userId) {
+        return getItemWithId(itemDTO, TestUtil.getTestUser(userId));
+    }
+
+    public static Item getItemWithId(SimpleItemDTO itemDTO, Request request, User user) {
+        Item item = getItemWithId(itemDTO, user);
         item.setRequest(request);
         return item;
+    }
+
+    public static Item getItemWithId(SimpleItemDTO itemDTO, Request request, Long userId) {
+        return getItemWithId(itemDTO, request, TestUtil.getTestUser(userId));
     }
 
     public static Comment getTestComment(Long commentId, Long userId, Item item) {
@@ -145,7 +153,7 @@ public class TestUtil {
         List<Booking> bookings = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             bookings.add(getTestBooking((long) i, (long) (Math.random() * 3),
-                    getItemWithId(getTestItemDTO((long) i), (long) i)));
+                    getItemWithId(getTestItemDTO((long) i), getTestUser((long) i))));
         }
         return bookings;
     }
@@ -175,18 +183,24 @@ public class TestUtil {
     public static BookingShort getTestBookingShort(Long itemId) {
         return getTestBookingShort(itemId, 122, 123);
     }
-    public static BookingDTO getTestBookingDTO(Long itemId, Long ownerId, Long userId, Integer startMinutes,
+
+    public static BookingDTO getTestBookingDTO(Long itemId, User owner, Long userId, Integer startMinutes,
                                                Integer endMinutes) {
         BookingDTO bookingDTO =
                 BookingMapper.INSTANCE.toBookingDTO(getTestBookingShort(null,
                                 startMinutes, endMinutes),
-                getItemWithId(getTestItemDTO(itemId), ownerId), getTestUser(userId));
+                getItemWithId(getTestItemDTO(itemId), owner), getTestUser(userId));
 
         bookingDTO.setStatus(BookingStatus.WAITING);
         return bookingDTO;
     }
 
+    public static BookingDTO getTestBookingDTO(Long itemId, Long ownerId, Long userId, Integer startMinutes,
+                                               Integer endMinutes) {
+        return getTestBookingDTO(itemId, getTestUser(ownerId), userId, startMinutes, endMinutes);
+    }
+
     public static BookingDTO getTestBookingDTO(Long itemId, Long ownerId, Long userId) {
-        return getTestBookingDTO(itemId, ownerId, userId, 122, 123);
+        return getTestBookingDTO(itemId, TestUtil.getTestUser(ownerId), userId, 122, 123);
     }
 }

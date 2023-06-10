@@ -1,5 +1,6 @@
 package unit_tests.com.nussia.item;
 
+import com.nussia.user.UserRepository;
 import util.TestUtil;
 import com.nussia.booking.BookingService;
 import com.nussia.booking.dto.UserBooking;
@@ -48,6 +49,9 @@ class ItemServiceImplTest {
     private UserService userService;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private BookingService bookingService;
 
     @Mock
@@ -78,14 +82,19 @@ class ItemServiceImplTest {
 
     @Test
     void shouldNotAddItemIfRequestDoesNotExist() {
+        Long ownerId = 0L;
+
         Mockito.when(userService.doesUserExist(ArgumentMatchers.anyLong()))
                 .thenReturn(true);
 
         Mockito.when(requestRepository.findById(ArgumentMatchers.anyLong()))
                 .thenReturn(Optional.empty());
 
+        Mockito.when(userRepository.findById(ArgumentMatchers.anyLong()))
+                .thenReturn(Optional.of(TestUtil.getTestUser(ownerId)));
+
         assertThrows(ObjectNotFoundException.class, () -> service.addNewItem(ItemMapper.INSTANCE.toItemDTO(
-                TestUtil.getTestItemDTOWithRequest(0L)), 0L));
+                TestUtil.getTestItemDTOWithRequest(0L)), ownerId));
     }
 
     @Test
@@ -105,6 +114,9 @@ class ItemServiceImplTest {
         Mockito.when(repository.save(ArgumentMatchers.any(Item.class))).thenReturn(
                 TestUtil.getItemWithId(testItemDTO, request, ownerId));
 
+        Mockito.when(userRepository.findById(ArgumentMatchers.anyLong()))
+                .thenReturn(Optional.of(TestUtil.getTestUser(ownerId)));
+
         assertThat(service.addNewItem(ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTOWithRequest(request.getId())),
                         ownerId), equalTo(testItemDTO));
     }
@@ -118,6 +130,9 @@ class ItemServiceImplTest {
         ItemDTO testItemDTO = ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTO(0L));
 
         Mockito.when(repository.save(ArgumentMatchers.any(Item.class))).thenReturn(TestUtil.getItemWithId(testItemDTO, ownerId));
+
+        Mockito.when(userRepository.findById(ArgumentMatchers.anyLong()))
+                .thenReturn(Optional.of(TestUtil.getTestUser(ownerId)));
 
         assertThat(service.addNewItem(ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTO()), ownerId),
                 equalTo(testItemDTO));
@@ -187,7 +202,7 @@ class ItemServiceImplTest {
         Long itemOwnerId = 3L;
         Long requesterId = 2L;
         ItemDTO itemDTO = ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTO());
-        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, itemOwnerId);
+        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, TestUtil.getTestUser(itemOwnerId));
 
         Mockito.when(repository.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(item));
 
@@ -199,7 +214,7 @@ class ItemServiceImplTest {
     void shouldEditItem() {
         Long itemOwnerId = 3L;
         ItemDTO itemDTO = ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTO());
-        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, itemOwnerId);
+        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, TestUtil.getTestUser(itemOwnerId));
         String secondDescription = "Another description of cool headphones";
 
         itemDTO.setDescription(secondDescription);
@@ -217,7 +232,7 @@ class ItemServiceImplTest {
     void shouldEditItemWithComments() {
         Long itemOwnerId = 3L;
         ItemDTO itemDTO = ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTO());
-        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, itemOwnerId);
+        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, TestUtil.getTestUser(itemOwnerId));
         String secondDescription = "Another description of cool headphones";
         List<Comment> comments = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -240,7 +255,7 @@ class ItemServiceImplTest {
     void shouldEditItemWithBookings() {
         Long itemOwnerId = 3L;
         ItemDTO itemDTO = ItemMapper.INSTANCE.toItemDTO(TestUtil.getTestItemDTO());
-        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, itemOwnerId);
+        Item item = ItemMapper.INSTANCE.toItemEntity(itemDTO, TestUtil.getTestUser(itemOwnerId));
         String secondDescription = "Another description of cool headphones";
 
         itemDTO.setDescription(secondDescription);

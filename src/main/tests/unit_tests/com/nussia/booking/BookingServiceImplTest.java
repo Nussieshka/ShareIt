@@ -128,9 +128,10 @@ class BookingServiceImplTest {
         BookingShort bookingShort = TestUtil.getTestBookingShort(itemId);
         Item item = TestUtil.getItemWithId(TestUtil.getTestItemDTO(itemId), itemOwnerId);
         User user = TestUtil.getTestUser(userId);
+        User owner = TestUtil.getTestUser(itemOwnerId);
         BookingDTO bookingDTO = BookingMapper.INSTANCE.toBookingDTO(bookingShort, item, user);
         bookingDTO.setId(bookingId);
-        Booking booking = BookingMapper.INSTANCE.toBookingEntity(bookingDTO, itemId, item.getRequest(), itemOwnerId);
+        Booking booking = BookingMapper.INSTANCE.toBookingEntity(bookingDTO, itemId, item.getRequest(), owner);
 
         Mockito.when(itemRepository.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(item));
         Mockito.when(userRepository.findById(ArgumentMatchers.anyLong())).thenReturn(Optional.of(user));
