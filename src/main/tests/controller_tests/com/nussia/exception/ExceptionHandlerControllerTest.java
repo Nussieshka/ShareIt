@@ -3,6 +3,7 @@ package controller_tests.com.nussia.exception;
 import com.nussia.exception.*;
 import com.nussia.user.UserController;
 import com.nussia.user.UserService;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +41,7 @@ public class ExceptionHandlerControllerTest {
 
     @Test
     void shouldHandleBadRequestException() throws Exception {
-        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(BadRequestException.class);
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(new BadRequestException());
         mockMvc.perform(get("/users/{userId}", 0L)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -47,7 +49,7 @@ public class ExceptionHandlerControllerTest {
 
     @Test
     void shouldHandleConflictException() throws Exception {
-        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(ConflictException.class);
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(new ConflictException());
         mockMvc.perform(get("/users/{userId}", 0L)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isConflict());
@@ -55,7 +57,7 @@ public class ExceptionHandlerControllerTest {
 
     @Test
     void shouldHandleForbiddenException() throws Exception {
-        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(ForbiddenException.class);
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(new ForbiddenException());
         mockMvc.perform(get("/users/{userId}", 0L)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
@@ -63,9 +65,53 @@ public class ExceptionHandlerControllerTest {
 
     @Test
     void shouldHandleObjectNotFoundException() throws Exception {
-        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(ObjectNotFoundException.class);
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class))).thenThrow(new ObjectNotFoundException());
         mockMvc.perform(get("/users/{userId}", 0L)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldHandleBadRequestExceptionWithMessage() throws Exception {
+        String creativeMessage = "a creative message";
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class)))
+                .thenThrow(new BadRequestException(creativeMessage));
+        mockMvc.perform(get("/users/{userId}", 0L)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", Matchers.is(creativeMessage)));
+    }
+
+    @Test
+    void shouldHandleConflictExceptionWithMessage() throws Exception {
+        String creativeMessage = "a creative message";
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class)))
+                .thenThrow(new ConflictException(creativeMessage));
+        mockMvc.perform(get("/users/{userId}", 0L)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error", Matchers.is(creativeMessage)));
+    }
+
+    @Test
+    void shouldHandleForbiddenExceptionWithMessage() throws Exception {
+        String creativeMessage = "a creative message";
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class)))
+                .thenThrow(new ForbiddenException(creativeMessage));
+        mockMvc.perform(get("/users/{userId}", 0L)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", Matchers.is(creativeMessage)));
+    }
+
+    @Test
+    void shouldHandleObjectNotFoundExceptionWithMessage() throws Exception {
+        String creativeMessage = "a creative message";
+        Mockito.when(service.getUser(ArgumentMatchers.any(Long.class)))
+                .thenThrow(new ObjectNotFoundException(creativeMessage));
+        mockMvc.perform(get("/users/{userId}", 0L)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error", Matchers.is(creativeMessage)));
     }
 }
