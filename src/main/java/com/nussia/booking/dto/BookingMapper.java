@@ -40,6 +40,6 @@ public interface BookingMapper {
     @Mapping(source = "bookingDTO.end", target = "endDate", dateFormat = "yyyy-MM-dd'T'HH:mm:ss")
     @Mapping(source = "bookingDTO.booker", target = "borrowingUser")
     @Mapping(source = "bookingDTO.status", target = "bookingStatus")
-    @Mapping(target = "item", expression = "java(itemMapper.toItemEntity(bookingDTO.getItem(), ownerId, request, itemId))")
-    Booking toBookingEntity(BookingDTO bookingDTO, Long itemId, Request request, Long ownerId);
+    @Mapping(target = "item", expression = "java(itemMapper.toItemEntity(bookingDTO.getItem(), owner, request, itemId))")
+    Booking toBookingEntity(BookingDTO bookingDTO, Long itemId, Request request, User owner);
 }

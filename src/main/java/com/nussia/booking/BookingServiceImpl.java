@@ -54,9 +54,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking testBooking = BookingMapper.INSTANCE.toBookingEntity(bookingDTO, itemId, item.getRequest(),
-                item.getOwnerId());
+                item.getOwner());
 
-        if (Objects.equals(testBooking.getItem().getOwnerId(), userId)) {
+        if (Objects.equals(testBooking.getItem().getOwner().getId(), userId)) {
             throw new ObjectNotFoundException("Cannot add booking for your own item");
         }
 
@@ -73,7 +73,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = repository.findById(bookingId)
                 .orElseThrow(() -> new ObjectNotFoundException("Booking", bookingId));
 
-        if (!Objects.equals(booking.getItem().getOwnerId(), userId)) {
+        if (!Objects.equals(booking.getItem().getOwner().getId(), userId)) {
             throw new ObjectNotFoundException("User with ID " + userId + " is not authorized to approve this booking");
         } else if (booking.getBookingStatus() != BookingStatus.WAITING) {
             throw new BadRequestException("Booking with ID " + bookingId + " is not waiting for approval");
@@ -94,7 +94,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = repository.findById(bookingId)
                 .orElseThrow(() -> new ObjectNotFoundException("Booking", bookingId));
 
-        if (!booking.getBorrowingUser().getId().equals(userId) && !booking.getItem().getOwnerId().equals(userId)) {
+        if (!booking.getBorrowingUser().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             throw new ObjectNotFoundException("Booking with ID " + bookingId + " not found for user with ID " + userId);
         }
 

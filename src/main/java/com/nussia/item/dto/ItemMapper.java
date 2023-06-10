@@ -6,6 +6,7 @@ import com.nussia.item.Item;
 import com.nussia.item.comment.Comment;
 import com.nussia.item.comment.dto.CommentMapper;
 import com.nussia.request.Request;
+import com.nussia.user.User;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -36,16 +37,17 @@ public interface ItemMapper {
     }
 
     @Mapping(target = "itemId", source = "id")
-    @Mapping(target = "ownerId", source = "userId")
+    @Mapping(target = "owner", source = "user")
     @Mapping(target = "comments", expression = "java(new ArrayList<>())")
     @Mapping(target = "description", source = "itemDTO.description")
-    Item toItemEntity(SimpleItemDTO itemDTO, Long userId, Request request, Long id);
+    @Mapping(target = "name", source = "itemDTO.name")
+    Item toItemEntity(SimpleItemDTO itemDTO, User user, Request request, Long id);
 
-    default Item toItemEntity(SimpleItemDTO itemDTO, Request request, Long userId) {
-        return INSTANCE.toItemEntity(itemDTO, userId, request, null);
+    default Item toItemEntity(SimpleItemDTO itemDTO, Request request, User owner) {
+        return INSTANCE.toItemEntity(itemDTO, owner, request, null);
     }
 
-    default Item toItemEntity(SimpleItemDTO itemDTO, Long userId) {
-        return INSTANCE.toItemEntity(itemDTO, userId, null, null);
+    default Item toItemEntity(SimpleItemDTO itemDTO, User owner) {
+        return INSTANCE.toItemEntity(itemDTO, owner, null, null);
     }
 }

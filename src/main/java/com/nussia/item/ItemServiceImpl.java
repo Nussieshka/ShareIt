@@ -15,6 +15,7 @@ import com.nussia.item.dto.ItemMapper;
 import com.nussia.request.Request;
 import com.nussia.request.RequestRepository;
 import com.nussia.user.User;
+import com.nussia.user.UserRepository;
 import com.nussia.user.dto.UserMapper;
 import com.nussia.user.UserService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,15 +32,18 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository repository;
     private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
     private final BookingService bookingService;
     private final RequestRepository requestRepository;
 
     public ItemServiceImpl(ItemRepository repository, CommentRepository commentRepository,
+                           UserRepository userRepository,
                            @Qualifier("JpaUserService") UserService userService,
                            BookingService bookingService, RequestRepository requestRepository) {
         this.repository = repository;
         this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
         this.userService = userService;
         this.bookingService = bookingService;
         this.requestRepository = requestRepository;
@@ -69,7 +73,7 @@ public class ItemServiceImpl implements ItemService {
 
         Item item = repository.findById(itemId).orElseThrow(() -> new ObjectNotFoundException("Item", itemId));
 
-        if (!item.getOwnerId().equals(ownerId)) {
+        if (!item.getOwner().getId().equals(ownerId)) {
             throw new ForbiddenException("User with ID " + ownerId + " do not have permission to edit item with ID " +
                     itemId);
         }
@@ -96,16 +100,18 @@ public class ItemServiceImpl implements ItemService {
             throw new ObjectNotFoundException("User", ownerId);
         }
 
+        User owner = getUser(ownerId);
+
         Long requestId = itemDTO.getRequestId();
         if (requestId == null) {
-            return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, ownerId)),
+            return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, owner)),
                     new ArrayList<>());
         }
 
         Request request = requestRepository.findById(requestId).orElseThrow(() ->
                 new ObjectNotFoundException("Request", requestId));
 
-        return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, request, ownerId)),
+        return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, request, owner)),
                 new ArrayList<>());
     }
 
@@ -113,7 +119,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDTO getItemById(Long itemId, Long userId) {
         Item item = getItem(itemId);
-        if (Objects.equals(item.getOwnerId(), userId)) {
+        if (Objects.equals(item.getOwner().getId(), userId)) {
             return ItemMapper.INSTANCE.toItemDTO(item, getComments(itemId), getNextAndLastUserBookings(itemId));
         } else {
             return ItemMapper.INSTANCE.toItemDTO(item, getComments(itemId));
@@ -160,7 +166,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private ItemDTO toItemDTOWithBookings(Item item, Long ownerId) {
-        if (Objects.equals(ownerId, item.getOwnerId())) {
+        if (Objects.equals(ownerId, item.getOwner().getId())) {
             return ItemMapper.INSTANCE.toItemDTO(item, getComments(item.getItemId()),
                     getNextAndLastUserBookings(item.getItemId()));
         } else {
@@ -197,5 +203,12 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Invalid parameter: itemId is null");
         }
         return this.commentRepository.findAllByItem_ItemId(itemId);
+    }
+
+    private User getUser(Long userId) {
+        if (userId == null) {
+            throw new BadRequestException("Invalid parameter: userId is null");
+        }
+        return userRepository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
     }
 }
