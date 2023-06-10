@@ -1,7 +1,8 @@
-package com.nussia.item.comment;
+package com.nussia.item.comment.dto;
 
 import com.nussia.Util;
 import com.nussia.item.Item;
+import com.nussia.item.comment.Comment;
 import com.nussia.user.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -20,6 +21,5 @@ public interface CommentMapper {
     @Mapping(source = "commentDTO.id", target = "id")
     @Mapping(target = "createdAt", expression = "java(commentDTO.getCreated() == null ?" +
             " LocalDateTime.now().plusSeconds(1) : Util.stringToLocalDataTime(commentDTO.getCreated()))")
-
     Comment toCommentEntity(CommentDTO commentDTO, User user, Item item);
 }

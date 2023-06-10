@@ -7,15 +7,19 @@ import com.nussia.exception.BadRequestException;
 import com.nussia.exception.ForbiddenException;
 import com.nussia.exception.ObjectNotFoundException;
 import com.nussia.item.comment.Comment;
-import com.nussia.item.comment.CommentDTO;
-import com.nussia.item.comment.CommentMapper;
+import com.nussia.item.comment.dto.CommentDTO;
+import com.nussia.item.comment.dto.CommentMapper;
 import com.nussia.item.comment.CommentRepository;
 import com.nussia.item.dto.ItemDTO;
 import com.nussia.item.dto.ItemMapper;
+import com.nussia.request.Request;
+import com.nussia.request.RequestRepository;
 import com.nussia.user.User;
+import com.nussia.user.UserRepository;
 import com.nussia.user.dto.UserMapper;
 import com.nussia.user.UserService;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -23,37 +27,41 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-
 @Service("JpaItemService")
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository repository;
-
     private final CommentRepository commentRepository;
-
+    private final UserRepository userRepository;
     private final UserService userService;
-
     private final BookingService bookingService;
-
+    private final RequestRepository requestRepository;
 
     public ItemServiceImpl(ItemRepository repository, CommentRepository commentRepository,
+                           UserRepository userRepository,
                            @Qualifier("JpaUserService") UserService userService,
-                           BookingService bookingService) {
+                           BookingService bookingService, RequestRepository requestRepository) {
         this.repository = repository;
         this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
         this.userService = userService;
         this.bookingService = bookingService;
+        this.requestRepository = requestRepository;
     }
 
     @Transactional
     @Override
-    public List<ItemDTO> getItems(Long userId) {
+    public List<ItemDTO> getItems(Integer from, Integer size, Long userId) {
 
-        if (!userService.isUserExists(userId)) {
+        if (!userService.doesUserExist(userId)) {
             throw new ObjectNotFoundException("User", userId);
         }
 
-        return getItemDTOFromItemList(repository.findAllByOwnerIdOrderByItemIdAsc(userId), userId);
+        return Util.getPaginatedResult(from, size,
+                () -> getItemDTOFromItemList(repository.findAllByOwnerIdOrderByItemIdAsc(userId), userId),
+                () -> getItemDTOFromItemList(
+                        repository.findAllByOwnerIdOrderByItemIdAsc(userId,
+                                PageRequest.of(from / size, size)), userId));
     }
 
     @Transactional
@@ -65,14 +73,15 @@ public class ItemServiceImpl implements ItemService {
 
         Item item = repository.findById(itemId).orElseThrow(() -> new ObjectNotFoundException("Item", itemId));
 
-        if (!item.getOwnerId().equals(ownerId)) {
+        if (!item.getOwner().getId().equals(ownerId)) {
             throw new ForbiddenException("User with ID " + ownerId + " do not have permission to edit item with ID " +
                     itemId);
         }
 
-        Util.editItemUsingDTO(item, itemDTO);
+        Util.updateItemEntityFromDTO(item, itemDTO);
 
-        return ItemMapper.INSTANCE.toItemDTO(repository.save(item), getComments(itemId), getNextAndLastUserBookings(itemId));
+        return ItemMapper.INSTANCE.toItemDTO(repository.save(item), getComments(itemId),
+                getNextAndLastUserBookings(itemId));
     }
 
     @Override
@@ -81,26 +90,36 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Invalid parameters: ownerId, or itemDTO is null");
         }
 
-        Long itemId = itemDTO.getId();
-
-        if (itemId != null) {
+        if (itemDTO.getId() != null) {
             throw new BadRequestException("Cannot add item with itemId");
         }
 
         Util.validateItemDTO(itemDTO);
 
-        if (!userService.isUserExists(ownerId)) {
+        if (!userService.doesUserExist(ownerId)) {
             throw new ObjectNotFoundException("User", ownerId);
         }
 
-        return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, ownerId)), new ArrayList<>());
+        User owner = getUser(ownerId);
+
+        Long requestId = itemDTO.getRequestId();
+        if (requestId == null) {
+            return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, owner)),
+                    new ArrayList<>());
+        }
+
+        Request request = requestRepository.findById(requestId).orElseThrow(() ->
+                new ObjectNotFoundException("Request", requestId));
+
+        return ItemMapper.INSTANCE.toItemDTO(repository.save(ItemMapper.INSTANCE.toItemEntity(itemDTO, request, owner)),
+                new ArrayList<>());
     }
 
     @Transactional
     @Override
     public ItemDTO getItemById(Long itemId, Long userId) {
         Item item = getItem(itemId);
-        if (Objects.equals(item.getOwnerId(), userId)) {
+        if (Objects.equals(item.getOwner().getId(), userId)) {
             return ItemMapper.INSTANCE.toItemDTO(item, getComments(itemId), getNextAndLastUserBookings(itemId));
         } else {
             return ItemMapper.INSTANCE.toItemDTO(item, getComments(itemId));
@@ -109,14 +128,19 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     @Override
-    public List<ItemDTO> getItemsBySearchQuery(String searchQuery, Long userId) {
+    public List<ItemDTO> getItemsBySearchQuery(Integer from, Integer size, String searchQuery, Long userId) {
         if (searchQuery.isBlank()) {
             return List.of();
         }
 
-        return getItemDTOFromItemList(repository.
-                findAllByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailable(searchQuery,
-                        searchQuery, true), userId);
+        return Util.getPaginatedResult(from, size,
+                () -> getItemDTOFromItemList(repository.
+                        findAllByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailable(searchQuery,
+                                searchQuery, true), userId),
+                () -> getItemDTOFromItemList(repository.
+                        findAllByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndAvailable(searchQuery,
+                                searchQuery, true, PageRequest.of(from / size, size)), userId));
+
     }
 
     private Item getItem(Long itemId) {
@@ -129,20 +153,20 @@ public class ItemServiceImpl implements ItemService {
 
     private Map.Entry<UserBooking, UserBooking> getNextAndLastUserBookings(Long itemId) {
         if (itemId == null) {
-            throw new ObjectNotFoundException("Item", itemId);
+            throw new ObjectNotFoundException("Item ID is null");
         }
 
         return new AbstractMap.SimpleEntry<>(bookingService.getLastBooking(itemId),
                 bookingService.getNextBooking(itemId));
     }
 
-    private List<ItemDTO> getItemDTOFromItemList(Iterable<Item> items, Long userId) {
+    public List<ItemDTO> getItemDTOFromItemList(Iterable<Item> items, Long userId) {
         return StreamSupport.stream(items.spliterator(), false)
                 .map(x -> toItemDTOWithBookings(x, userId)).collect(Collectors.toList());
     }
 
     private ItemDTO toItemDTOWithBookings(Item item, Long ownerId) {
-        if (Objects.equals(ownerId, item.getOwnerId())) {
+        if (Objects.equals(ownerId, item.getOwner().getId())) {
             return ItemMapper.INSTANCE.toItemDTO(item, getComments(item.getItemId()),
                     getNextAndLastUserBookings(item.getItemId()));
         } else {
@@ -167,10 +191,6 @@ public class ItemServiceImpl implements ItemService {
 
         Util.validateCommentDTO(commentDTO);
 
-        if (!userService.isUserExists(userId)) {
-            throw new ObjectNotFoundException("User", userId);
-        }
-
         User user = UserMapper.INSTANCE.toUserEntity(userService.getUser(userId));
         Item item = this.getItem(itemId);
 
@@ -183,5 +203,12 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Invalid parameter: itemId is null");
         }
         return this.commentRepository.findAllByItem_ItemId(itemId);
+    }
+
+    private User getUser(Long userId) {
+        if (userId == null) {
+            throw new BadRequestException("Invalid parameter: userId is null");
+        }
+        return userRepository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
     }
 }

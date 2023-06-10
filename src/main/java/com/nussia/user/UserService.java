@@ -15,5 +15,5 @@ public interface UserService {
 
     List<UserDTO> getUsers();
 
-    Boolean isUserExists(Long userId);
+    Boolean doesUserExist(Long userId);
 }

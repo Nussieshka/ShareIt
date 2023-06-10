@@ -3,34 +3,67 @@ package com.nussia;
 import com.nussia.booking.dto.BookingDTO;
 import com.nussia.exception.BadRequestException;
 import com.nussia.item.*;
-import com.nussia.item.comment.CommentDTO;
+import com.nussia.item.comment.dto.CommentDTO;
 import com.nussia.item.dto.ItemDTO;
+import com.nussia.item.dto.SimpleItemDTO;
+import com.nussia.request.dto.RequestDTO;
+import com.nussia.user.User;
 import com.nussia.user.dto.UserDTO;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.function.Supplier;
 
 
 public class Util {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
-    public static void editItemUsingDTO(Item item, ItemDTO itemDTO) {
+    public static void updateItemEntityFromDTO(Item item, ItemDTO itemDTO) {
         String name = itemDTO.getName();
         if (name != null) {
-            item.setName(name);
+            if (!name.isBlank()) {
+                item.setName(name);
+            } else {
+                throw new BadRequestException("Invalid parameter: name is invalid");
+            }
         }
 
         String description = itemDTO.getDescription();
         if (description != null) {
-            item.setDescription(description);
+            if (!description.isBlank()) {
+                item.setDescription(description);
+            } else {
+                throw new BadRequestException("Invalid parameter: description is invalid");
+            }
         }
 
         Boolean available = itemDTO.getAvailable();
         if (available != null) {
             item.setAvailable(available);
         }
-    }   
+    }
+
+    public static void updateUserEntityFromDTO(User user, UserDTO userDTO) {
+        String name = userDTO.getName();
+        if (name != null) {
+            if (!name.isBlank()) {
+                user.setName(name);
+            } else {
+                throw new BadRequestException("Invalid parameter: name is invalid");
+            }
+        }
+
+        String email = userDTO.getEmail();
+        if (email != null) {
+            if (!email.isBlank() && email.matches("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b")) {
+                user.setEmail(email);
+            } else {
+                throw new BadRequestException("Invalid parameter: email is invalid");
+            }
+        }
+    }
 
     public static void validateUserDTO(UserDTO userDTO) {
         String name = userDTO.getName();
@@ -94,6 +127,38 @@ public class Util {
         } else if (text.isBlank()) {
             throw new BadRequestException("Cannot add comment with blank text");
         }
+    }
+
+    public static void validateRequestDTO(RequestDTO requestDTO) {
+        String description = requestDTO.getDescription();
+        if (description == null) {
+            throw new BadRequestException("Description cannot be null");
+        } else if (description.isBlank()) {
+            throw new BadRequestException("Cannot add description with blank description");
+        } else if (requestDTO.getCreated() != null) {
+            throw new BadRequestException("Cannot add request with date");
+        } else if (requestDTO.getId() != null) {
+            throw new BadRequestException("Cannot add request with id");
+        }
+
+        List<SimpleItemDTO> itemDTOS = requestDTO.getItems();
+        if (itemDTOS != null && !itemDTOS.isEmpty()) {
+            throw new BadRequestException("Cannot add request with items");
+        }
+    }
+
+    public static <V> V getPaginatedResult(Integer from, Integer size, Supplier<V> returnValue, Supplier<V> paginatedValue) {
+        if (from == null && size == null) {
+            return returnValue.get();
+        } else if (from == null || size == null) {
+            throw new BadRequestException("Invalid parameters: from or size is null");
+        } else if (from < 0) {
+            throw new BadRequestException("Invalid parameters: from more or equal to 0");
+        } else if (size < 1) {
+            throw new BadRequestException("Invalid parameters: size should be more than 0");
+        }
+
+        return paginatedValue.get();
     }
 
     public static String localDataTimeToString(LocalDateTime dateTime) {

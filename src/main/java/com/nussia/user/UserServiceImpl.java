@@ -9,7 +9,6 @@ import com.nussia.user.dto.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -48,17 +47,9 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Invalid parameters: userId, or userDTO is null");
         }
 
-        String email = userDTO.getEmail();
         User user = this.repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
 
-        String name = userDTO.getName();
-        if (name != null) {
-            user.setName(name);
-        }
-
-        if (email != null) {
-            user.setEmail(email);
-        }
+        Util.updateUserEntityFromDTO(user, userDTO);
 
         return UserMapper.INSTANCE.toUserDTO(repository.save(user));
     }
@@ -81,11 +72,7 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Invalid parameter: userId is null");
         }
         User user = repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
-        try {
-            repository.deleteById(userId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new ObjectNotFoundException("User", userId);
-        }
+        repository.deleteById(userId);
         return UserMapper.INSTANCE.toUserDTO(user);
     }
 
@@ -95,7 +82,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Boolean isUserExists(Long userId) {
+    public Boolean doesUserExist(Long userId) {
         if (userId == null) {
             throw new BadRequestException("Invalid parameter: userId is null");
         }

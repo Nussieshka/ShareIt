@@ -17,7 +17,7 @@ public class UserController {
         this.USER_SERVICE = USER_SERVICE;
     }
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<UserDTO> postUser(@RequestBody UserDTO userDTO) {
         return ResponseEntity.ok(USER_SERVICE.createUser(userDTO));
     }
@@ -37,7 +37,7 @@ public class UserController {
         return ResponseEntity.ok(USER_SERVICE.deleteUser(userId));
     }
 
-    @GetMapping()
+    @GetMapping
     public ResponseEntity<List<UserDTO>> getUsers() {
         return ResponseEntity.ok(USER_SERVICE.getUsers());
     }

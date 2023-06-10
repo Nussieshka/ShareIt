@@ -13,11 +13,11 @@ import com.nussia.exception.ObjectNotFoundException;
 import com.nussia.item.Item;
 import com.nussia.item.ItemRepository;
 import com.nussia.user.User;
-import com.nussia.user.dto.UserMapper;
 import com.nussia.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -35,6 +35,7 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
 
     private final UserRepository userRepository;
+
     @Transactional
     @Override
     public BookingDTO addBooking(BookingShort bookingShort, Long userId) {
@@ -43,24 +44,19 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Long itemId = bookingShort.getItemId();
-        BookingDTO bookingDTO = new BookingDTO();
-        Item item = getItemById(itemId);
-        User user = getUser(userId);
-        bookingDTO.setStart(bookingShort.getStart());
-        bookingDTO.setEnd(bookingShort.getEnd());
-        bookingDTO.setStatus(BookingStatus.WAITING);
-        bookingDTO.setItem(item.toSimpleItemDTO());
-        bookingDTO.setBooker(UserMapper.INSTANCE.toUserDTO(user));
 
+        Item item = getItemById(itemId);
+        BookingDTO bookingDTO = BookingMapper.INSTANCE.toBookingDTO(bookingShort, item, getUser(userId));
         Util.validateBookingDTO(bookingDTO);
 
         if (!item.getAvailable()) {
             throw new BadRequestException("Item with ID " + itemId + "is unavailable");
         }
 
-        Booking testBooking = BookingMapper.INSTANCE.toBookingEntity(bookingDTO, itemId, item.getOwnerId());
+        Booking testBooking = BookingMapper.INSTANCE.toBookingEntity(bookingDTO, itemId, item.getRequest(),
+                item.getOwner());
 
-        if (Objects.equals(testBooking.getItem().getOwnerId(), userId)) {
+        if (Objects.equals(testBooking.getItem().getOwner().getId(), userId)) {
             throw new ObjectNotFoundException("Cannot add booking for your own item");
         }
 
@@ -77,7 +73,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = repository.findById(bookingId)
                 .orElseThrow(() -> new ObjectNotFoundException("Booking", bookingId));
 
-        if (!Objects.equals(booking.getItem().getOwnerId(), userId)) {
+        if (!Objects.equals(booking.getItem().getOwner().getId(), userId)) {
             throw new ObjectNotFoundException("User with ID " + userId + " is not authorized to approve this booking");
         } else if (booking.getBookingStatus() != BookingStatus.WAITING) {
             throw new BadRequestException("Booking with ID " + bookingId + " is not waiting for approval");
@@ -98,7 +94,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = repository.findById(bookingId)
                 .orElseThrow(() -> new ObjectNotFoundException("Booking", bookingId));
 
-        if (!booking.getBorrowingUser().getId().equals(userId) && !booking.getItem().getOwnerId().equals(userId)) {
+        if (!booking.getBorrowingUser().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             throw new ObjectNotFoundException("Booking with ID " + bookingId + " not found for user with ID " + userId);
         }
 
@@ -107,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     @Override
-    public List<BookingDTO> getBookingsByState(Long userId, String state) {
+    public List<BookingDTO> getBookingsByState(Integer from, Integer size, Long userId, String state) {
         if (state == null) {
             throw new BadRequestException("State is null");
         } else if (!isUserExists(userId)) {
@@ -116,41 +112,56 @@ public class BookingServiceImpl implements BookingService {
 
         try {
             BookingState bookingState = BookingState.valueOf(state.toUpperCase());
-            List<Booking> out;
+            Iterable<Booking> out = null;
             LocalDateTime now = LocalDateTime.now();
 
             switch (bookingState) {
                 case ALL:
-                    out = repository.findAllByBorrowingUser_IdOrderByStartDateDesc(userId);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findAllByBorrowingUser_IdOrderByStartDateDesc(userId),
+                            () -> repository.findAllByBorrowingUser_IdOrderByStartDateDesc(userId,
+                                    PageRequest.of(from / size, size)));
                     break;
 
                 case CURRENT:
-                    out = repository.findByBorrowingUser_IdAndStartDateBeforeAndEndDateAfterOrderByStartDateAsc(
-                            userId, now, now);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findByBorrowingUser_IdAndStartDateBeforeAndEndDateAfterOrderByStartDateAsc(
+                                    userId, now, now),
+                            () -> repository.findByBorrowingUser_IdAndStartDateBeforeAndEndDateAfterOrderByStartDateAsc(
+                                    userId, now, now, PageRequest.of(from / size, size)));
                     break;
 
                 case PAST:
-                    out = repository.findByBorrowingUser_IdAndStartDateBeforeAndEndDateBeforeOrderByStartDateDesc(
-                            userId, now, now);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findByBorrowingUser_IdAndStartDateBeforeAndEndDateBeforeOrderByStartDateDesc(
+                                    userId, now, now),
+                            () -> repository.findByBorrowingUser_IdAndStartDateBeforeAndEndDateBeforeOrderByStartDateDesc(
+                                    userId, now, now, PageRequest.of(from / size, size)));
                     break;
 
                 case FUTURE:
-                    out = repository.findByBorrowingUser_IdAndStartDateAfterAndEndDateAfterOrderByStartDateDesc(
-                            userId, now, now);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findByBorrowingUser_IdAndStartDateAfterAndEndDateAfterOrderByStartDateDesc(
+                                    userId, now, now),
+                            () -> repository.findByBorrowingUser_IdAndStartDateAfterAndEndDateAfterOrderByStartDateDesc(
+                                    userId, now, now, PageRequest.of(from / size, size)));
                     break;
 
                 case WAITING:
-                    out = repository.findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(
-                            userId, BookingStatus.WAITING);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(
+                                    userId, BookingStatus.WAITING),
+                            () -> repository.findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(
+                                    userId, BookingStatus.WAITING, PageRequest.of(from / size, size)));
                     break;
 
                 case REJECTED:
-                    out = repository.findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(
-                            userId, BookingStatus.REJECTED);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(
+                                    userId, BookingStatus.REJECTED),
+                            () -> repository.findByBorrowingUser_IdAndBookingStatusOrderByStartDateDesc(
+                                    userId, BookingStatus.REJECTED, PageRequest.of(from / size, size)));
                     break;
-
-                default:
-                    throw new BadRequestException("Unknown state: " + state);
             }
 
             return BookingMapper.INSTANCE.toBookingDTO(out);
@@ -161,7 +172,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     @Override
-    public List<BookingDTO> getBookingsByStateFromOwner(Long userId, String state) {
+    public List<BookingDTO> getBookingsByStateFromOwner(Integer from, Integer size, Long userId, String state) {
         if (userId == null || state == null) {
             throw new BadRequestException("State is null");
         } else if (!isUserExists(userId)) {
@@ -170,41 +181,56 @@ public class BookingServiceImpl implements BookingService {
 
         try {
             BookingState bookingState = BookingState.valueOf(state.toUpperCase());
-            List<Booking> out;
+            Iterable<Booking> out = null;
             LocalDateTime now = LocalDateTime.now();
 
             switch (bookingState) {
                 case ALL:
-                    out = repository.findAllByItem_OwnerIdOrderByStartDateDesc(userId);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findAllByItem_OwnerIdOrderByStartDateDesc(userId),
+                            () -> repository.findAllByItem_OwnerIdOrderByStartDateDesc(userId,
+                                    PageRequest.of(from / size, size)));
                     break;
 
                 case CURRENT:
-                    out = repository.findByStartDateBeforeAndEndDateAfterAndItem_OwnerIdOrderByStartDateAsc(now, now,
-                            userId);
+                    out = Util.getPaginatedResult(from, size,
+                            () -> repository.findByStartDateBeforeAndEndDateAfterAndItem_OwnerIdOrderByStartDateAsc(now,
+                                    now, userId),
+                            () -> repository.findByStartDateBeforeAndEndDateAfterAndItem_OwnerIdOrderByStartDateAsc(now,
+                                    now, userId, PageRequest.of(from / size, size)));
                     break;
 
                 case PAST:
-                    out = repository.findByStartDateBeforeAndEndDateBeforeAndItem_OwnerIdOrderByStartDateDesc(now, now,
-                            userId);
+                    out = Util.getPaginatedResult(from, size, () ->
+                            repository.findByStartDateBeforeAndEndDateBeforeAndItem_OwnerIdOrderByStartDateDesc(now,
+                                    now, userId), () ->
+                            repository.findByStartDateBeforeAndEndDateBeforeAndItem_OwnerIdOrderByStartDateDesc(now,
+                                    now, userId, PageRequest.of(from / size, size)));
                     break;
 
                 case FUTURE:
-                    out = repository.findByStartDateAfterAndEndDateAfterAndItem_OwnerIdOrderByStartDateDesc(now, now,
-                            userId);
+                    out = Util.getPaginatedResult(from, size, () ->
+                            repository.findByStartDateAfterAndEndDateAfterAndItem_OwnerIdOrderByStartDateDesc(now,
+                                    now, userId), () ->
+                            repository.findByStartDateAfterAndEndDateAfterAndItem_OwnerIdOrderByStartDateDesc(now,
+                                    now, userId, PageRequest.of(from / size, size)));
                     break;
 
                 case WAITING:
-                    out = repository.findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus.WAITING,
-                            userId);
+                    out = Util.getPaginatedResult(from, size, () ->
+                            repository.findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus.WAITING,
+                                    userId), () ->
+                            repository.findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus.WAITING,
+                                    userId, PageRequest.of(from / size, size)));
                     break;
 
                 case REJECTED:
-                    out = repository.findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus.REJECTED,
-                            userId);
+                    out = Util.getPaginatedResult(from, size, () ->
+                            repository.findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus.REJECTED,
+                                    userId), () ->
+                            repository.findByBookingStatusAndItem_OwnerIdOrderByStartDateDesc(BookingStatus.REJECTED,
+                                    userId, PageRequest.of(from / size, size)));
                     break;
-
-                default:
-                    throw new BadRequestException("Unknown state: " + state);
             }
 
             return BookingMapper.INSTANCE.toBookingDTO(out);
@@ -217,7 +243,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public UserBooking getLastBooking(Long itemId) {
         if (itemId == null) {
-            throw new ObjectNotFoundException("Item", itemId);
+            throw new ObjectNotFoundException("Item ID is null");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -230,7 +256,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public UserBooking getNextBooking(Long itemId) {
         if (itemId == null) {
-            throw new ObjectNotFoundException("Item", itemId);
+            throw new ObjectNotFoundException("Item ID is null");
         }
 
         LocalDateTime now = LocalDateTime.now();
