@@ -1,0 +1,39 @@
+version: '24.0.2'
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    volumes:
+      - /var/lib/postgresql/data/
+    ports:
+      - 6541:5432
+    environment:
+      - POSTGRES_DB=share_it
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=super-secret-password
+
+  shareit-server:
+    build:
+      ./server
+    ports:
+      - 9090
+    depends_on:
+      - postgres
+    environment:
+      - DB_NAME=share_it
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=super-secret-password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+
+  shareit-gateway:
+    build:
+      ./gateway
+    ports:
+      - 8080:8080
+    depends_on:
+      - shareit-server
+    environment:
+      - SHAREIT_SERVER_URL=http://shareit-server:9090
+
