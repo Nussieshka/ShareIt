@@ -1,8 +1,10 @@
 package com.nussia.shareit.item;
 
 import com.nussia.shareit.Util;
-import com.nussia.shareit.booking.BookingService;
+import com.nussia.shareit.booking.BookingRepository;
+import com.nussia.shareit.booking.dto.BookingMapper;
 import com.nussia.shareit.booking.dto.UserBooking;
+import com.nussia.shareit.booking.model.BookingStatus;
 import com.nussia.shareit.exception.BadRequestException;
 import com.nussia.shareit.exception.ForbiddenException;
 import com.nussia.shareit.exception.ObjectNotFoundException;
@@ -16,13 +18,11 @@ import com.nussia.shareit.request.Request;
 import com.nussia.shareit.request.RequestRepository;
 import com.nussia.shareit.user.User;
 import com.nussia.shareit.user.UserRepository;
-import com.nussia.shareit.user.dto.UserMapper;
-import com.nussia.shareit.user.UserService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -31,21 +31,22 @@ import java.util.stream.StreamSupport;
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository repository;
+
     private final CommentRepository commentRepository;
+
     private final UserRepository userRepository;
-    private final UserService userService;
-    private final BookingService bookingService;
+
+    private final BookingRepository bookingRepository;
+
     private final RequestRepository requestRepository;
 
     public ItemServiceImpl(ItemRepository repository, CommentRepository commentRepository,
                            UserRepository userRepository,
-                           @Qualifier("JpaUserService") UserService userService,
-                           BookingService bookingService, RequestRepository requestRepository) {
+                           BookingRepository bookingRepository, RequestRepository requestRepository) {
         this.repository = repository;
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
-        this.userService = userService;
-        this.bookingService = bookingService;
+        this.bookingRepository = bookingRepository;
         this.requestRepository = requestRepository;
     }
 
@@ -53,7 +54,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDTO> getItems(Integer from, Integer size, Long userId) {
 
-        if (!userService.doesUserExist(userId)) {
+        if (userId == null) {
+            throw new BadRequestException("Invalid parameter: userId is null");
+        }
+
+        if (!userRepository.existsById(userId)) {
             throw new ObjectNotFoundException("User", userId);
         }
 
@@ -94,9 +99,7 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Cannot add item with itemId");
         }
 
-//        Util.validateItemDTO(itemDTO);
-
-        if (!userService.doesUserExist(ownerId)) {
+        if (!userRepository.existsById(ownerId)) {
             throw new ObjectNotFoundException("User", ownerId);
         }
 
@@ -156,8 +159,7 @@ public class ItemServiceImpl implements ItemService {
             throw new ObjectNotFoundException("Item ID is null");
         }
 
-        return new AbstractMap.SimpleEntry<>(bookingService.getLastBooking(itemId),
-                bookingService.getNextBooking(itemId));
+        return new AbstractMap.SimpleEntry<>(getLastBooking(itemId), getNextBooking(itemId));
     }
 
     public List<ItemDTO> getItemDTOFromItemList(Iterable<Item> items, Long userId) {
@@ -185,13 +187,12 @@ public class ItemServiceImpl implements ItemService {
 
         if (commentId != null) {
             throw new BadRequestException("Cannot add comment with ID");
-        } else if (!bookingService.isBorrowedByUser(userId, itemId)) {
+        } else if (!bookingRepository.existsByBorrowingUser_IdAndItem_ItemIdAndBookingStatusEqualsAndEndDateBefore(
+                userId, itemId, BookingStatus.APPROVED, LocalDateTime.now())) {
             throw new BadRequestException("This user is not a booker");
         }
 
-//        Util.validateCommentDTO(commentDTO);
-
-        User user = UserMapper.INSTANCE.toUserEntity(userService.getUser(userId));
+        User user = userRepository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
         Item item = this.getItem(itemId);
 
         return CommentMapper.INSTANCE.toCommentDTO(this.commentRepository.save(
@@ -210,5 +211,27 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Invalid parameter: userId is null");
         }
         return userRepository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
+    }
+
+    private UserBooking getLastBooking(Long itemId) {
+        if (itemId == null) {
+            throw new ObjectNotFoundException("Item ID is null");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return bookingRepository.findFirstByItem_ItemIdAndStartDateBeforeAndBookingStatusEqualsOrderByEndDateDesc(
+                itemId, now, BookingStatus.APPROVED).map(BookingMapper.INSTANCE::toUserBooking).orElse(null);
+    }
+
+    private UserBooking getNextBooking(Long itemId) {
+        if (itemId == null) {
+            throw new ObjectNotFoundException("Item ID is null");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return bookingRepository.findFirstByItem_ItemIdAndStartDateAfterAndBookingStatusEqualsOrderByStartDateAsc(
+                itemId, now, BookingStatus.APPROVED).map(BookingMapper.INSTANCE::toUserBooking).orElse(null);
     }
 }

@@ -47,7 +47,6 @@ public class BookingServiceImpl implements BookingService {
 
         Item item = getItemById(itemId);
         BookingDTO bookingDTO = BookingMapper.INSTANCE.toBookingDTO(bookingShort, item, getUser(userId));
-//        Util.validateBookingDTO(bookingDTO);
 
         if (!item.getAvailable()) {
             throw new BadRequestException("Item with ID " + itemId + "is unavailable");

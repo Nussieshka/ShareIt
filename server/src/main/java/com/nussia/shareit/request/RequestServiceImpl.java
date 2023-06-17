@@ -6,8 +6,7 @@ import com.nussia.shareit.exception.ObjectNotFoundException;
 import com.nussia.shareit.request.dto.RequestDTO;
 import com.nussia.shareit.request.dto.RequestMapper;
 import com.nussia.shareit.user.User;
-import com.nussia.shareit.user.UserService;
-import com.nussia.shareit.user.dto.UserMapper;
+import com.nussia.shareit.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,7 @@ import java.util.List;
 public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository repository;
-    private final UserService userService;
+    private final UserRepository userRepository;
 
     @Override
     public RequestDTO addRequest(RequestDTO requestDTO, Long userId) {
@@ -28,9 +27,7 @@ public class RequestServiceImpl implements RequestService {
             throw new BadRequestException("Invalid parameters: requestDTO, or userId is null");
         }
 
-//        Util.validateRequestDTO(requestDTO);
-
-        User user = UserMapper.INSTANCE.toUserEntity(userService.getUser(userId));
+        User user = userRepository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("User", userId));
 
         return RequestMapper.INSTANCE.toRequestDTO(
                 repository.save(RequestMapper.INSTANCE.toRequestEntity(requestDTO, user)));
@@ -41,7 +38,7 @@ public class RequestServiceImpl implements RequestService {
     public List<RequestDTO> getRequestsByUserId(Long userId) {
         if (userId == null) {
             throw new BadRequestException("Invalid parameter: userId is null");
-        } else if (!userService.doesUserExist(userId)) {
+        } else if (!userRepository.existsById(userId)) {
             throw new ObjectNotFoundException("User", userId);
         }
 
@@ -67,7 +64,7 @@ public class RequestServiceImpl implements RequestService {
     public RequestDTO getRequestById(Long requestId, Long userId) {
         if (requestId == null || userId == null) {
             throw new BadRequestException("Invalid parameters: requestId or userId is null");
-        } else if (!userService.doesUserExist(userId)) {
+        } else if (!userRepository.existsById(userId)) {
             throw new ObjectNotFoundException("User", userId);
         }
 

@@ -30,8 +30,6 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Cannot add user with userId");
         }
 
-//        Util.validateUserDTO(userDTO);
-
         try {
             return UserMapper.INSTANCE.toUserDTO(repository.save(UserMapper.INSTANCE.toUserEntity(userDTO)));
         } catch (DataIntegrityViolationException e) {
