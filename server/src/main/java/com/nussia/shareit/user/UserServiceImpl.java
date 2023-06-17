@@ -78,12 +78,4 @@ public class UserServiceImpl implements UserService {
     public List<UserDTO> getUsers() {
         return UserMapper.INSTANCE.toUserDTO(repository.findAll());
     }
-
-    @Override
-    public Boolean doesUserExist(Long userId) {
-        if (userId == null) {
-            throw new BadRequestException("Invalid parameter: userId is null");
-        }
-        return repository.existsById(userId);
-    }
 }

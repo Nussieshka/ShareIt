@@ -14,6 +14,4 @@ public interface UserService {
     UserDTO deleteUser(Long userId);
 
     List<UserDTO> getUsers();
-
-    Boolean doesUserExist(Long userId);
 }

@@ -4,7 +4,6 @@ import com.nussia.shareit.Util;
 import com.nussia.shareit.booking.dto.BookingDTO;
 import com.nussia.shareit.booking.dto.BookingMapper;
 import com.nussia.shareit.booking.dto.BookingShort;
-import com.nussia.shareit.booking.dto.UserBooking;
 import com.nussia.shareit.booking.model.Booking;
 import com.nussia.shareit.booking.model.BookingState;
 import com.nussia.shareit.booking.model.BookingStatus;
@@ -236,38 +235,6 @@ public class BookingServiceImpl implements BookingService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown state: " + state);
         }
-    }
-
-    @Transactional
-    @Override
-    public UserBooking getLastBooking(Long itemId) {
-        if (itemId == null) {
-            throw new ObjectNotFoundException("Item ID is null");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        return repository.findFirstByItem_ItemIdAndStartDateBeforeAndBookingStatusEqualsOrderByEndDateDesc(itemId, now,
-                BookingStatus.APPROVED).map(BookingMapper.INSTANCE::toUserBooking).orElse(null);
-    }
-
-    @Transactional
-    @Override
-    public UserBooking getNextBooking(Long itemId) {
-        if (itemId == null) {
-            throw new ObjectNotFoundException("Item ID is null");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        return repository.findFirstByItem_ItemIdAndStartDateAfterAndBookingStatusEqualsOrderByStartDateAsc(itemId, now,
-                BookingStatus.APPROVED).map(BookingMapper.INSTANCE::toUserBooking).orElse(null);
-    }
-
-    @Override
-    public boolean isBorrowedByUser(Long userId, Long itemId) {
-        return repository.existsByBorrowingUser_IdAndItem_ItemIdAndBookingStatusEqualsAndEndDateBefore(userId, itemId,
-                BookingStatus.APPROVED, LocalDateTime.now());
     }
 
     private Item getItemById(Long itemId) {
